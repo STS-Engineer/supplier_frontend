@@ -52,7 +52,7 @@ const SupplierManagement = () => {
     const fetchCustomers = async () => {
         try {
             setLoading(true);
-            const response = await fetch('http://localhost:5000/ajouter/api/groups');
+            const response = await fetch('https://supplier-back.azurewebsites.net/ajouter/api/groups');
             if (!response.ok) throw new Error('Failed to fetch customers');
             const data = await response.json();
 
@@ -63,7 +63,7 @@ const SupplierManagement = () => {
                     const unitsWithCertificates = await Promise.all(
                         customer.units.map(async (unit) => {
                             try {
-                                const certResponse = await fetch(`http://localhost:5000/ajouter/api/certificates/by-unit/${unit.unit_id}`);
+                                const certResponse = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/certificates/by-unit/${unit.unit_id}`);
                                 if (certResponse.ok) {
                                     const certificates = await certResponse.json();
                                     return {
@@ -97,12 +97,12 @@ const SupplierManagement = () => {
 
     const fetchUnitDetails = async (unitId) => {
         try {
-            const response = await fetch(`http://localhost:5000/ajouter/api/units/${unitId}`);
+            const response = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/units/${unitId}`);
             if (!response.ok) throw new Error('Failed to fetch unit details');
             const unitData = await response.json();
 
             // Fetch certificates for this unit
-            const certResponse = await fetch(`http://localhost:5000/ajouter/api/certificates/by-unit/${unitId}`);
+            const certResponse = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/certificates/by-unit/${unitId}`);
             if (certResponse.ok) {
                 const certificates = await certResponse.json();
                 unitData.certificates = certificates;
@@ -224,7 +224,7 @@ const SupplierManagement = () => {
             console.log('🔍 Opening edit modal for customer:', customer.supplier_name);
 
             // Always fetch fresh data from the complete endpoint
-            const response = await fetch(`http://localhost:5000/ajouter/api/groups/${customer.supplier_id}/complete`);
+            const response = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/groups/${customer.supplier_id}/complete`);
             if (!response.ok) throw new Error('Failed to fetch customer details');
 
             const customerData = await response.json();
@@ -542,8 +542,8 @@ const SupplierManagement = () => {
 
         try {
             const url = selectedGroup
-                ? `http://localhost:5000/ajouter/api/groups/${selectedGroup.supplier_id}`
-                : 'http://localhost:5000/ajouter/api/groups';
+                ? `https://supplier-back.azurewebsites.net/ajouter/api/groups/${selectedGroup.supplier_id}`
+                : 'https://supplier-back.azurewebsites.net/ajouter/api/groups';
 
             const method = selectedGroup ? 'PUT' : 'POST';
 
@@ -580,7 +580,7 @@ const SupplierManagement = () => {
             if (editingCustomer) {
                 // UPDATE EXISTING CUSTOMER
                 // 1. Update the group
-                const groupResponse = await fetch(`http://localhost:5000/ajouter/api/groups/${editingCustomer.supplier_id}`, {
+                const groupResponse = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/groups/${editingCustomer.supplier_id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -652,7 +652,7 @@ const SupplierManagement = () => {
 
                     if (unit.unit_id) {
                         // Update existing unit
-                        const unitResponse = await fetch(`http://localhost:5000/ajouter/api/units/${unit.unit_id}`, {
+                        const unitResponse = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/units/${unit.unit_id}`, {
                             method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -671,7 +671,7 @@ const SupplierManagement = () => {
                         await handleUnitCertificates(unit, savedUnit.unit_id);
                     } else {
                         // Create new unit
-                        const unitResponse = await fetch('http://localhost:5000/ajouter/api/units', {
+                        const unitResponse = await fetch('https://supplier-back.azurewebsites.net/ajouter/api/units', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -703,7 +703,7 @@ const SupplierManagement = () => {
             } else {
                 // CREATE NEW CUSTOMER
                 // 1. First create the group
-                const groupResponse = await fetch('http://localhost:5000/ajouter/api/groups', {
+                const groupResponse = await fetch('https://supplier-back.azurewebsites.net/ajouter/api/groups', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -775,7 +775,7 @@ const SupplierManagement = () => {
                     };
 
                     // Create new unit
-                    const unitResponse = await fetch('http://localhost:5000/ajouter/api/units', {
+                    const unitResponse = await fetch('https://supplier-back.azurewebsites.net/ajouter/api/units', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -823,7 +823,7 @@ const SupplierManagement = () => {
     const handleUnitCertificates = async (unit, unitId) => {
         try {
             // First, get existing certificates for this unit
-            const existingCertsResponse = await fetch(`http://localhost:5000/ajouter/api/certificates/by-unit/${unitId}`);
+            const existingCertsResponse = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/certificates/by-unit/${unitId}`);
             const existingCertificates = existingCertsResponse.ok ? await existingCertsResponse.json() : [];
 
             // Get current certificate IDs from the form
@@ -838,7 +838,7 @@ const SupplierManagement = () => {
 
             // Delete certificates that were removed
             const deletePromises = certsToDelete.map(async (cert) => {
-                await fetch(`http://localhost:5000/ajouter/api/certificates/${cert.certificat_id}`, {
+                await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/certificates/${cert.certificat_id}`, {
                     method: 'DELETE',
                 });
             });
@@ -853,7 +853,7 @@ const SupplierManagement = () => {
 
                 if (cert.certificat_id) {
                     // Update existing certificate
-                    const certResponse = await fetch(`http://localhost:5000/ajouter/api/certificates/${cert.certificat_id}`, {
+                    const certResponse = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/certificates/${cert.certificat_id}`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
@@ -868,7 +868,7 @@ const SupplierManagement = () => {
                     return certResponse.json();
                 } else {
                     // Create new certificate
-                    const certResponse = await fetch('http://localhost:5000/ajouter/api/certificates', {
+                    const certResponse = await fetch('https://supplier-back.azurewebsites.net/ajouter/api/certificates', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -897,7 +897,7 @@ const SupplierManagement = () => {
         if (!groupToDelete) return;
 
         try {
-            const response = await fetch(`http://localhost:5000/ajouter/api/groups/${groupToDelete.supplier_id}`, {
+            const response = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/groups/${groupToDelete.supplier_id}`, {
                 method: 'DELETE',
             });
 
@@ -1087,7 +1087,7 @@ const CompleteCustomerModal = ({
             try {
                 setLoadingPersons(true);
                 // Use the new endpoint without domain filter
-                const response = await fetch('http://localhost:5000/ajouter/api/persons');
+                const response = await fetch('https://supplier-back.azurewebsites.net/ajouter/api/persons');
                 if (!response.ok) throw new Error('Failed to fetch persons');
                 const personsData = await response.json();
                 setPersons(personsData);
