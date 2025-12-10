@@ -444,6 +444,7 @@
 }
 
 /* Responsible Card */
+/* Responsible Card */
 .responsible-card {
     background: linear-gradient(135deg, #f8f9ff, #e9ecef);
     padding: 25px;
@@ -504,6 +505,52 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 15px;
+}
+
+/* Add this for the detail items inside person-details */
+.person-details .detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 12px;
+    background: white;
+    border-radius: var(--border-radius-xs);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.person-details .detail-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.person-details .detail-label i {
+    color: var(--primary-color);
+    font-size: 0.9rem;
+    width: 16px;
+}
+
+.person-details .detail-value {
+    font-size: 0.95rem;
+    color: var(--dark-color);
+    font-weight: 500;
+    word-break: break-word;
+}
+
+/* For email and phone links */
+.person-details .detail-value a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.person-details .detail-value a:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
 }
 
 /* Loading and Error States */

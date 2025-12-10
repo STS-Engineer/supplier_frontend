@@ -1909,31 +1909,7 @@ const CompleteCustomerModal = ({
                                     </select>
                                 </div>
 
-                                {/* Display selected person details (optional) */}
-                                {unit.responsible?.Person_id && (
-                                    <div className="selected-person-details">
-                                        <div className="form-row">
-                                            <div className="form-group">
-                                                <label className="form-label">Email</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-input"
-                                                    value={unit.responsible.email || ''}
-                                                    readOnly
-                                                />
-                                            </div>
-                                            <div className="form-group">
-                                                <label className="form-label">Phone</label>
-                                                <input
-                                                    type="text"
-                                                    className="form-input"
-                                                    value={unit.responsible.phone_number || ''}
-                                                    readOnly
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
+                      
 
                                 {/* ==================== CERTIFICATES SECTION ==================== */}
                                 {/* MOVE THIS INSIDE THE UNIT MAPPING */}
