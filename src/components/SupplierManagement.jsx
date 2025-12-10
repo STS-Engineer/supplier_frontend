@@ -1,6 +1,6 @@
 // SupplierManagement.jsx
 import React, { useState, useEffect } from 'react';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'
 import './SupplierManagement.css';
 
@@ -16,9 +16,6 @@ const SupplierManagement = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [groupToDelete, setGroupToDelete] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [certificates, setCertificates] = useState([]);
-    const [selectedCertificate, setSelectedCertificate] = useState(null);
-    const [isCertificateModalOpen, setIsCertificateModalOpen] = useState(false);
     const [error, setError] = useState(null);
     const [formData, setFormData] = useState({
         supplier_name: '',
