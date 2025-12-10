@@ -695,7 +695,11 @@ const SupplierManagement = () => {
 
                 // Wait for all units to be updated/created
                 await Promise.all(unitPromises);
-                toast.success('Customer updated successfully!');
+                toast.success('Customer updated successfully!', {
+                    position: "top-center",
+                    autoClose: 3000,
+                    toastClassName: "custom-toast-offset",
+                });
             } else {
                 // CREATE NEW CUSTOMER
                 // 1. First create the group
@@ -903,8 +907,9 @@ const SupplierManagement = () => {
             }
             console.log('🔥 Toast launched: Group created/updated');
             toast.success('Supplier deleted successfully!', {
-                position: "top-right",
-                autoClose: 3000
+                position: "top-center",
+                autoClose: 3000,
+                toastClassName: "custom-toast-offset",
             });
             await fetchCustomers();
             closeModals();
@@ -2067,7 +2072,7 @@ const CompleteCustomerModal = ({
                             <i className="fas fa-save"></i>
                             {isEditing
                                 ? 'Update Supplier'
-                                : (data.units.length === 0 ? 'Create Group Only' : 'Create Complete Customer')
+                                : (data.units.length === 0 ? 'Create Only Supplier' : 'Create Complete Supplier')
                             }
                         </button>
                     </div>

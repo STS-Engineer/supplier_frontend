@@ -1413,8 +1413,7 @@
 }
 
 .custom-toast-offset {
-    margin-top: 40px !important;
-    /* adjust as needed */
+    margin-top: 120px !important; /* Increased from 90px */
 }
 
 
