@@ -2687,7 +2687,7 @@ const UnitModal = ({ unit, onClose }) => {
         if (filePath.startsWith('http')) {
             return filePath;
         } else if (filePath.startsWith('/uploads')) {
-            return `http://localhost:5000${filePath}`;
+            return `https://supplier-back.azurewebsites.net${filePath}`;
         } else if (filePath.startsWith('uploads')) {
             return `https://supplier-back.azurewebsites.net/${filePath}`;
         }
