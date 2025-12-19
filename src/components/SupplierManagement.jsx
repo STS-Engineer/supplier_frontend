@@ -1,52 +1,11 @@
 // SupplierManagement.jsx
 import React, { useState, useEffect } from 'react';
-import { toast, ToastContainer } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'
 import './SupplierManagement.css';
 
 
-// ==================== PDF VIEWER COMPONENT ====================
-const PDFViewer = ({ fileUrl, fileName }) => {
-    const [isOpen, setIsOpen] = useState(false);
 
-    if (!fileUrl || !fileUrl.toLowerCase().endsWith('.pdf')) {
-        return null;
-    }
-
-    return (
-        <>
-            <button
-                type="button"
-                className="btn-icon btn-sm"
-                onClick={() => setIsOpen(true)}
-                title="Preview PDF"
-            >
-                <i className="fas fa-expand"></i>
-            </button>
-
-            {isOpen && (
-                <div className="pdf-viewer-modal" onClick={() => setIsOpen(false)}>
-                    <div className="pdf-viewer-content" onClick={(e) => e.stopPropagation()}>
-                        <div className="pdf-viewer-header">
-                            <h3>PDF Preview: {fileName}</h3>
-                            <button className="modal-close" onClick={() => setIsOpen(false)}>
-                                <i className="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div className="pdf-viewer-body">
-                            <iframe
-                                src={fileUrl}
-                                title={fileName}
-                                className="pdf-iframe"
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
-        </>
-    );
-};
-// ==================== END PDF VIEWER ====================
 
 const SupplierManagement = () => {
     const [customers, setCustomers] = useState([]);
@@ -3020,13 +2979,7 @@ const UnitModal = ({ unit, onClose }) => {
     );
 };
 
-// Add this helper function for file size formatting
-const formatFileSize = (bytes) => {
-    if (!bytes) return '';
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-};
+
 // Detail Item Component
 const DetailItem = ({ label, value, icon, isEmail = false, isPhone = false }) => {
     if (!value) return null;
