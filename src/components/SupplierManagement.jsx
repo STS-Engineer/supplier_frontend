@@ -364,7 +364,7 @@ const SupplierManagement = () => {
                             if (cert.file.startsWith('http')) {
                                 file_url = cert.file;
                             } else if (cert.file.startsWith('/uploads')) {
-                                file_url = `http://localhost:5000${cert.file}`;
+                                file_url = `https://supplier-back.azurewebsites.net${cert.file}`;
                             }
                         }
                         return {
@@ -2692,7 +2692,7 @@ const UnitModal = ({ unit, onClose }) => {
         }
 
         // Otherwise, prepend the base URL
-        return `http://localhost:5000${fileUrl}`;
+        return `https://supplier-back.azurewebsites.net${fileUrl}`;
     };
 
     // Helper function to get file type icon
