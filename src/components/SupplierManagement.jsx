@@ -1,11 +1,12 @@
 // SupplierManagement.jsx
 import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
+import { toast} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'
 import './SupplierManagement.css';
 
 
 
+// ==================== END PDF VIEWER ====================
 
 const SupplierManagement = () => {
     const [customers, setCustomers] = useState([]);
@@ -109,7 +110,7 @@ const SupplierManagement = () => {
             }
 
             setSelectedUnit(unitData);
-            setIsOpen(true);
+            setIsUnitModalOpen(true);
         } catch (err) {
             setError(err.message);
         }
@@ -227,181 +228,181 @@ const SupplierManagement = () => {
         setIsGroupModalOpen(true);
     };
 
-const openEditCompleteCustomerModal = async (customer) => {
-    try {
-        setLoading(true);
+    const openEditCompleteCustomerModal = async (customer) => {
+        try {
+            setLoading(true);
 
-        console.log('🔍 Opening edit modal for customer:', customer.supplier_name);
+            console.log('🔍 Opening edit modal for customer:', customer.supplier_name);
 
-        // Always fetch fresh data from the complete endpoint
-        const response = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/groups/${customer.supplier_id}/complete`);
-        if (!response.ok) throw new Error('Failed to fetch customer details');
+            // Always fetch fresh data from the complete endpoint
+            const response = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/groups/${customer.supplier_id}/complete`);
+            if (!response.ok) throw new Error('Failed to fetch customer details');
 
-        const customerData = await response.json();
-        console.log('🔍 Complete customer data from backend:', {
-            units: customerData.units?.length,
-            firstUnit: customerData.units?.[0],
-            certificatesInFirstUnit: customerData.units?.[0]?.certificates,
-            mainplantsRaw: customerData.units?.[0]?.mainplants,
-            plant: customerData.units?.[0]?.plant,
-            top: customerData.units?.[0]?.top,
-            status: customerData.units?.[0]?.status,
-            category: customerData.units?.[0]?.category
-        });
+            const customerData = await response.json();
+            console.log('🔍 Complete customer data from backend:', {
+                units: customerData.units?.length,
+                firstUnit: customerData.units?.[0],
+                certificatesInFirstUnit: customerData.units?.[0]?.certificates,
+                mainplantsRaw: customerData.units?.[0]?.mainplants,
+                plant: customerData.units?.[0]?.plant,
+                top: customerData.units?.[0]?.top,
+                status: customerData.units?.[0]?.status,
+                category: customerData.units?.[0]?.category
+            });
 
-        setEditingCustomer(customerData);
+            setEditingCustomer(customerData);
 
-        // Prepare the data to set
-        const newCompleteCustomerData = {
-            group: {
-                supplier_name: customerData.supplier_name,
-                description: customerData.description || ''
-            },
-            units: (customerData.units || []).map(unit => ({
-                // Basic Information
-                unit_id: unit.unit_id,
-                unit_name: unit.unit_name || '',
-                city: unit.city || '',
-                country: unit.country || '',
-                com_person_id: unit.com_person_id || null,
-                zone_name: unit.zone_name || '',
-                document_file: unit.document_file || null,
-                
-                // FIX: Handle mainplants properly - it could be string or array
-                mainplants: unit.mainplants ? 
-                    (Array.isArray(unit.mainplants) ? 
-                        unit.mainplants : 
-                        (typeof unit.mainplants === 'string' ? 
-                            unit.mainplants.split(',').map(item => item.trim()).filter(item => item !== '') : 
-                            []
-                        )
-                    ) : [],
-                
-                _openMainPlants: false, // initialize dropdown state
-                
-                plant: unit.plant || '',
-                top: unit.top || '',
-                status: unit.status || '',
-                category: unit.category || '',
-                responsible_text: unit.responsible || '', // Text field
-                
-                // Account Information
-                account_name: unit.account_name || '',
-                parent_account: unit.parent_account || '',
-                key_account: unit.key_account || false,
-                ke_account_manager: unit.ke_account_manager || '',
-                avo_carbon_main_contact: unit.avo_carbon_main_contact || '',
-                avo_carbon_tech_lead: unit.avo_carbon_tech_lead || '',
-                type: unit.type || '',
-                industry: unit.industry || '',
-                account_owner: unit.account_owner || '',
-                phone: unit.phone || '',
-                website: unit.website || '',
-                employees: unit.employees || '',
-                useful_information: unit.useful_information || '',
-                billing_account_number: unit.billing_account_number || '',
-                product_family: unit.product_family || '',
-                account_currency: unit.account_currency || '',
-
-                // Company Information
-                start_year: unit.start_year || '',
-                solvent_customer: unit.solvent_customer || '',
-                solvency_info: unit.solvency_info || '',
-                budget_avo_carbon: unit.budget_avo_carbon || '',
-                avo_carbon_potential_buisness: unit.avo_carbon_potential_buisness || '',
-                
-                // Address Information
-                billing_address_search: unit.billing_address_search || '',
-                billing_street: unit.billing_street || '',
-                billing_city: unit.billing_city || '',
-                billing_state: unit.billing_state || '',
-                billing_zip: unit.billing_zip || '',
-                billing_country: unit.billing_country || '',
-                shippping_address_search: unit.shippping_address_search || '',
-                shipping_street: unit.shipping_street || '',
-                shipping_city: unit.shipping_city || '',
-                shipping_state: unit.shipping_state || '',
-                shipping_zip: unit.shipping_zip || '',
-                shipping_country: unit.shipping_country || '',
-                copy_billing: unit.copy_billing || false,
-
-                // Agreements
-                confidentiality_agreement: unit.confidentiality_agreement || false,
-                quality_agreement: unit.quality_agreement || false,
-                terms_purshase: unit.terms_purshase || '',
-                logistics_agreement: unit.logistics_agreement || false,
-                payment_conditions: unit.payment_conditions || '',
-                tech_key_account: unit.tech_key_account || '',
-
-                // Responsible Person
-                responsible: unit.responsible ? {
-                    Person_id: unit.responsible.Person_id,
-                    first_name: unit.responsible.first_name || '',
-                    last_name: unit.responsible.last_name || '',
-                    job_title: unit.responsible.job_title || '',
-                    email: unit.responsible.email || '',
-                    phone_number: unit.responsible.phone_number || '',
-                    role: unit.responsible.role || 'Contact',
-                    zone_name: unit.responsible.zone_name || ''
-                } : {
-                    Person_id: null,
-                    first_name: '',
-                    last_name: '',
-                    job_title: '',
-                    email: '',
-                    phone_number: '',
-                    role: 'Contact',
-                    zone_name: ''
+            // Prepare the data to set
+            const newCompleteCustomerData = {
+                group: {
+                    supplier_name: customerData.supplier_name,
+                    description: customerData.description || ''
                 },
+                units: (customerData.units || []).map(unit => ({
+                    // Basic Information
+                    unit_id: unit.unit_id,
+                    unit_name: unit.unit_name || '',
+                    city: unit.city || '',
+                    country: unit.country || '',
+                    com_person_id: unit.com_person_id || null,
+                    zone_name: unit.zone_name || '',
+                    document_file: unit.document_file || null,
 
-                // Certificates
-                certificates: (unit.certificates || []).map(cert => {
-                    console.log('📋 Certificate data:', cert);
-                    // Get file URL - handle both direct URLs and relative paths
-                    let file_url = null;
-                    if (cert.file) {
-                        if (cert.file.startsWith('http')) {
-                            file_url = cert.file;
-                        } else if (cert.file.startsWith('/uploads')) {
-                            file_url = `https://supplier-back.azurewebsites.net${cert.file}`;
+                    // FIX: Handle mainplants properly - it could be string or array
+                    mainplants: unit.mainplants ?
+                        (Array.isArray(unit.mainplants) ?
+                            unit.mainplants :
+                            (typeof unit.mainplants === 'string' ?
+                                unit.mainplants.split(',').map(item => item.trim()).filter(item => item !== '') :
+                                []
+                            )
+                        ) : [],
+
+                    _openMainPlants: false, // initialize dropdown state
+
+                    plant: unit.plant || '',
+                    top: unit.top || '',
+                    status: unit.status || '',
+                    category: unit.category || '',
+                    responsible_text: unit.responsible || '', // Text field
+
+                    // Account Information
+                    account_name: unit.account_name || '',
+                    parent_account: unit.parent_account || '',
+                    key_account: unit.key_account || false,
+                    ke_account_manager: unit.ke_account_manager || '',
+                    avo_carbon_main_contact: unit.avo_carbon_main_contact || '',
+                    avo_carbon_tech_lead: unit.avo_carbon_tech_lead || '',
+                    type: unit.type || '',
+                    industry: unit.industry || '',
+                    account_owner: unit.account_owner || '',
+                    phone: unit.phone || '',
+                    website: unit.website || '',
+                    employees: unit.employees || '',
+                    useful_information: unit.useful_information || '',
+                    billing_account_number: unit.billing_account_number || '',
+                    product_family: unit.product_family || '',
+                    account_currency: unit.account_currency || '',
+
+                    // Company Information
+                    start_year: unit.start_year || '',
+                    solvent_customer: unit.solvent_customer || '',
+                    solvency_info: unit.solvency_info || '',
+                    budget_avo_carbon: unit.budget_avo_carbon || '',
+                    avo_carbon_potential_buisness: unit.avo_carbon_potential_buisness || '',
+
+                    // Address Information
+                    billing_address_search: unit.billing_address_search || '',
+                    billing_street: unit.billing_street || '',
+                    billing_city: unit.billing_city || '',
+                    billing_state: unit.billing_state || '',
+                    billing_zip: unit.billing_zip || '',
+                    billing_country: unit.billing_country || '',
+                    shippping_address_search: unit.shippping_address_search || '',
+                    shipping_street: unit.shipping_street || '',
+                    shipping_city: unit.shipping_city || '',
+                    shipping_state: unit.shipping_state || '',
+                    shipping_zip: unit.shipping_zip || '',
+                    shipping_country: unit.shipping_country || '',
+                    copy_billing: unit.copy_billing || false,
+
+                    // Agreements
+                    confidentiality_agreement: unit.confidentiality_agreement || false,
+                    quality_agreement: unit.quality_agreement || false,
+                    terms_purshase: unit.terms_purshase || '',
+                    logistics_agreement: unit.logistics_agreement || false,
+                    payment_conditions: unit.payment_conditions || '',
+                    tech_key_account: unit.tech_key_account || '',
+
+                    // Responsible Person
+                    responsible: unit.responsible ? {
+                        Person_id: unit.responsible.Person_id,
+                        first_name: unit.responsible.first_name || '',
+                        last_name: unit.responsible.last_name || '',
+                        job_title: unit.responsible.job_title || '',
+                        email: unit.responsible.email || '',
+                        phone_number: unit.responsible.phone_number || '',
+                        role: unit.responsible.role || 'Contact',
+                        zone_name: unit.responsible.zone_name || ''
+                    } : {
+                        Person_id: null,
+                        first_name: '',
+                        last_name: '',
+                        job_title: '',
+                        email: '',
+                        phone_number: '',
+                        role: 'Contact',
+                        zone_name: ''
+                    },
+
+                    // Certificates
+                    certificates: (unit.certificates || []).map(cert => {
+                        console.log('📋 Certificate data:', cert);
+                        // Get file URL - handle both direct URLs and relative paths
+                        let file_url = null;
+                        if (cert.file) {
+                            if (cert.file.startsWith('http')) {
+                                file_url = cert.file;
+                            } else if (cert.file.startsWith('/uploads')) {
+                                file_url = `http://localhost:5000${cert.file}`;
+                            }
                         }
-                    }
-                    return {
-                        certificat_id: cert.certificat_id || null,
-                        Type: cert.Type || '',
-                        validity_date: cert.validity_date || '',
-                        custom_type: cert.custom_type || '',
-                        file: null, // Don't store File object, just track it separately
-                        file_url: file_url || cert.file_url || null,
-                        file_name: cert.file ? cert.file.split('/').pop() : null
-                    };
-                })
-            }))
-        };
+                        return {
+                            certificat_id: cert.certificat_id || null,
+                            Type: cert.Type || '',
+                            validity_date: cert.validity_date || '',
+                            custom_type: cert.custom_type || '',
+                            file: null, // Don't store File object, just track it separately
+                            file_url: file_url || cert.file_url || null,
+                            file_name: cert.file ? cert.file.split('/').pop() : null
+                        };
+                    })
+                }))
+            };
 
-        console.log('✅ CompleteCustomerData after mapping:', {
-            units: newCompleteCustomerData.units?.length,
-            firstUnitName: newCompleteCustomerData.units?.[0]?.unit_name,
-            mainplants: newCompleteCustomerData.units?.[0]?.mainplants,
-            plant: newCompleteCustomerData.units?.[0]?.plant,
-            top: newCompleteCustomerData.units?.[0]?.top,
-            status: newCompleteCustomerData.units?.[0]?.status,
-            category: newCompleteCustomerData.units?.[0]?.category,
-            certificatesCount: newCompleteCustomerData.units?.[0]?.certificates?.length
-        });
+            console.log('✅ CompleteCustomerData after mapping:', {
+                units: newCompleteCustomerData.units?.length,
+                firstUnitName: newCompleteCustomerData.units?.[0]?.unit_name,
+                mainplants: newCompleteCustomerData.units?.[0]?.mainplants,
+                plant: newCompleteCustomerData.units?.[0]?.plant,
+                top: newCompleteCustomerData.units?.[0]?.top,
+                status: newCompleteCustomerData.units?.[0]?.status,
+                category: newCompleteCustomerData.units?.[0]?.category,
+                certificatesCount: newCompleteCustomerData.units?.[0]?.certificates?.length
+            });
 
-        // Set the state
-        setCompleteCustomerData(newCompleteCustomerData);
-        setFormErrors({});
-        setIsCompleteCustomerModalOpen(true);
-    } catch (err) {
-        console.error('Error fetching customer:', err);
-        setError(err.message);
-        toast.error(`Error loading customer data: ${err.message}`);
-    } finally {
-        setLoading(false);
-    }
-};
+            // Set the state
+            setCompleteCustomerData(newCompleteCustomerData);
+            setFormErrors({});
+            setIsCompleteCustomerModalOpen(true);
+        } catch (err) {
+            console.error('Error fetching customer:', err);
+            setError(err.message);
+            toast.error(`Error loading customer data: ${err.message}`);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const openDeleteGroupModal = (group) => {
         setGroupToDelete(group);
@@ -409,7 +410,7 @@ const openEditCompleteCustomerModal = async (customer) => {
     };
 
     const closeModals = () => {
-        setIsOpen(false);
+        setIsUnitModalOpen(false);
         setIsGroupModalOpen(false);
         setIsCompleteCustomerModalOpen(false);
         setIsDeleteModalOpen(false);
@@ -1169,7 +1170,7 @@ const openEditCompleteCustomerModal = async (customer) => {
             </main>
 
             {/* Unit Details Modal */}
-            {isOpen && < unit={selectedUnit} onClose={closeModals} />}
+            {isUnitModalOpen && <UnitModal unit={selectedUnit} onClose={closeModals} />}
 
             {/* Group Form Modal */}
             {isGroupModalOpen && (
@@ -2966,6 +2967,7 @@ const UnitModal = ({ unit, onClose }) => {
         </div>
     );
 };
+
 
 // Detail Item Component
 const DetailItem = ({ label, value, icon, isEmail = false, isPhone = false }) => {
