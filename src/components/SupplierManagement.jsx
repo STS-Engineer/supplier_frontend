@@ -2682,24 +2682,28 @@ const UnitModal = ({ unit, onClose }) => {
     if (!unit) return null;
 
     // Helper function to get full file URL
-    // ✅ FIXED: Helper function to get full file URL
     const getFileUrl = (fileUrl) => {
         if (!fileUrl) return null;
-        
+
         // If it already has the full URL, use it as is
         if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
             return fileUrl;
         }
-        
+
         // Otherwise, prepend the base URL
-        // Make sure this matches your backend URL
-        return `https://supplier-back.azurewebsites.net${fileUrl}`;
+        return `http://localhost:5000${fileUrl}`;
     };
 
-    // Helper function to get file name
-    const getFileName = (filePath) => {
-        if (!filePath) return 'Certificate';
-        return filePath.split('/').pop();
+    // Helper function to get file type icon
+    const getFileIcon = (fileName) => {
+        if (!fileName) return 'fas fa-file';
+        const ext = fileName.split('.').pop().toLowerCase();
+        if (ext === 'pdf') return 'fas fa-file-pdf';
+        if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'].includes(ext)) return 'fas fa-file-image';
+        if (['doc', 'docx'].includes(ext)) return 'fas fa-file-word';
+        if (['xls', 'xlsx'].includes(ext)) return 'fas fa-file-excel';
+        if (['zip', 'rar', '7z'].includes(ext)) return 'fas fa-file-archive';
+        return 'fas fa-file';
     };
 
     // Helper function to get file name
@@ -2891,81 +2895,77 @@ const UnitModal = ({ unit, onClose }) => {
                     )}
 
                     {/* ==================== CERTIFICATES SECTION ==================== */}
-          {unit.certificates && unit.certificates.length > 0 && (
-                    <div className="detail-section">
-                        <h3>
-                            <i className="fas fa-certificate"></i> Unit Certificates ({unit.certificates.length})
-                        </h3>
-                        <div className="certificates-grid">
-                            {unit.certificates.map((cert) => {
-                                // Get file URL - use file_url from database
-                                const fileUrl = getFileUrl(cert.file_url);
-                                const fileName = cert.file_name || getFileName(cert.file_url);
+                    {/* ==================== CERTIFICATES SECTION ==================== */}
+                    {unit.certificates && unit.certificates.length > 0 && (
+                        <div className="detail-section">
+                            <h3>
+                                <i className="fas fa-certificate"></i> Unit Certificates ({unit.certificates.length})
+                            </h3>
+                            <div className="certificates-grid">
+                                {unit.certificates.map((cert) => {
+                                    const fileUrl = cert.file_url; // Full URL from DB
+                                    const fileName = cert.file_name || 'Certificate';
 
-                                return (
-                                    <div key={cert.certificat_id || cert.Type} className="certificate-card">
-                                        <div className="certificate-header">
-                                            <i className="fas fa-certificate certificate-icon"></i>
-                                            <span className="certificate-type">{cert.Type}</span>
-                                            {cert.certificat_id && <span className="cert-id-badge">ID: {cert.certificat_id}</span>}
-                                        </div>
-                                        <div className="certificate-details">
-                                            <DetailItem
-                                                label="Validity Date"
-                                                value={cert.validity_date}
-                                                icon="fas fa-calendar-alt"
-                                            />
-                                            
-                                            {cert.custom_type && (
+                                    // Console the file_url for debugging
+                                    console.log('Certificate file_url:', fileUrl);
+
+                                    return (
+                                        <div key={cert.certificat_id || cert.Type} className="certificate-card">
+                                            <div className="certificate-header">
+                                                <i className="fas fa-certificate certificate-icon"></i>
+                                                <span className="certificate-type">{cert.Type}</span>
+                                                {cert.certificat_id && (
+                                                    <span className="cert-id-badge">ID: {cert.certificat_id}</span>
+                                                )}
+                                            </div>
+
+                                            <div className="certificate-details">
                                                 <DetailItem
-                                                    label="Custom Type"
-                                                    value={cert.custom_type}
-                                                    icon="fas fa-tag"
+                                                    label="Validity Date"
+                                                    value={cert.validity_date}
+                                                    icon="fas fa-calendar-alt"
                                                 />
-                                            )}
 
-                                            {/* ✅ FIXED: File Preview Section */}
-                                            {fileUrl && (
-                                                <div className="certificate-file-preview">
-                                                    <div className="file-preview-header">
-                                                        <div className="detail-label">
-                                                            <i className="fas fa-paperclip"></i>
-                                                            Certificate File
+                                                {cert.custom_type && (
+                                                    <DetailItem
+                                                        label="Custom Type"
+                                                        value={cert.custom_type}
+                                                        icon="fas fa-tag"
+                                                    />
+                                                )}
+
+                                                {fileUrl && (
+                                                    <div className="certificate-file-preview">
+                                                        <div className="file-preview-header">
+                                                            <div className="detail-label">
+                                                                <i className="fas fa-paperclip"></i> Certificate File
+                                                            </div>
                                                         </div>
-                                                        <span className="file-name-display">{fileName}</span>
+
+                                                        <div className="file-actions">
+                                                            <a href={getFileUrl(cert.file_url)} target="_blank" rel="noopener noreferrer">
+                                                                View
+                                                            </a>
+                                                            <a href={getFileUrl(cert.file_url)} download={fileName}>
+                                                                Download
+                                                            </a>
+
+                                                        </div>
                                                     </div>
-                                                    <div className="file-actions">
-                                                        <a 
-                                                            href={fileUrl} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer"
-                                                            className="btn-file-action"
-                                                        >
-                                                            <i className="fas fa-eye"></i> View
-                                                        </a>
-                                                        <a 
-                                                            href={fileUrl} 
-                                                            download={fileName}
-                                                            className="btn-file-action"
-                                                        >
-                                                            <i className="fas fa-download"></i> Download
-                                                        </a>
-                                                    </div>
-                                                </div>
-                                            )}
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
+
                 </div>
             </div>
         </div>
     );
 };
-
 
 // Detail Item Component
 const DetailItem = ({ label, value, icon, isEmail = false, isPhone = false }) => {
