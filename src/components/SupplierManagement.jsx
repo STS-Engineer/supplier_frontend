@@ -363,7 +363,7 @@ const openEditCompleteCustomerModal = async (customer) => {
                         if (cert.file.startsWith('http')) {
                             file_url = cert.file;
                         } else if (cert.file.startsWith('/uploads')) {
-                            file_url = `http://localhost:5000${cert.file}`;
+                            file_url = `https://supplier-back.azurewebsites.net${cert.file}`;
                         }
                     }
                     return {
@@ -2940,30 +2940,13 @@ const UnitModal = ({ unit, onClose }) => {
                                                         </div>
                                                       <div className="file-actions">
                                                               
-                                                                
-                                                                {/* View File Link */}
-                                                                <a
-                                                                    href={fileUrl}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="file-action-btn"
-                                                                    title="View File"
-                                                                >
-                                                                    <i className={getFileIcon(fileName)}></i>
-                                                                    <span>View</span>
-                                                                </a>
-                                                                
-                                                                {/* Download Link */}
-                                                                <a
-                                                                    href={fileUrl}
-                                                                    download={fileName}
-                                                                    className="file-action-btn"
-                                                                    title="Download File"
-                                                                >
-                                                                    <i className="fas fa-download"></i>
-                                                                    <span>Download</span>
-                                                                </a>
-                                                            </div>
+                                                         <a href={getFileUrl(cert.file_url)} target="_blank" rel="noopener noreferrer">
+                                                                View
+                                                      </a>
+                                                     <a href={getFileUrl(cert.file_url)} download={fileName}>
+                                                                Download
+                                                     </a>
+                                                   </div>
                                                     </div>
                                                 )}
                                             </div>
