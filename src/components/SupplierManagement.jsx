@@ -109,7 +109,7 @@ const SupplierManagement = () => {
             }
 
             setSelectedUnit(unitData);
-            setIsUnitModalOpen(true);
+            setIsOpen(true);
         } catch (err) {
             setError(err.message);
         }
@@ -409,7 +409,7 @@ const openEditCompleteCustomerModal = async (customer) => {
     };
 
     const closeModals = () => {
-        setIsUnitModalOpen(false);
+        setIsOpen(false);
         setIsGroupModalOpen(false);
         setIsCompleteCustomerModalOpen(false);
         setIsDeleteModalOpen(false);
@@ -1169,7 +1169,7 @@ const openEditCompleteCustomerModal = async (customer) => {
             </main>
 
             {/* Unit Details Modal */}
-            {isUnitModalOpen && <UnitModal unit={selectedUnit} onClose={closeModals} />}
+            {isOpen && < unit={selectedUnit} onClose={closeModals} />}
 
             {/* Group Form Modal */}
             {isGroupModalOpen && (
@@ -2682,17 +2682,25 @@ const UnitModal = ({ unit, onClose }) => {
     if (!unit) return null;
 
     // Helper function to get full file URL
-   const getFileUrl = (fileUrl) => {
-    if (!fileUrl) return null;
-    
-    // If it already has the full URL, use it as is
-    if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
-        return fileUrl;
-    }
-    
-    // Otherwise, prepend the base URL
-    return `https://supplier-back.azurewebsites.net${fileUrl}`;
-};
+    // ✅ FIXED: Helper function to get full file URL
+    const getFileUrl = (fileUrl) => {
+        if (!fileUrl) return null;
+        
+        // If it already has the full URL, use it as is
+        if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+            return fileUrl;
+        }
+        
+        // Otherwise, prepend the base URL
+        // Make sure this matches your backend URL
+        return `https://supplier-back.azurewebsites.net${fileUrl}`;
+    };
+
+    // Helper function to get file name
+    const getFileName = (filePath) => {
+        if (!filePath) return 'Certificate';
+        return filePath.split('/').pop();
+    };
 
     // Helper function to get file name
     const getFileName = (filePath) => {
@@ -2883,67 +2891,75 @@ const UnitModal = ({ unit, onClose }) => {
                     )}
 
                     {/* ==================== CERTIFICATES SECTION ==================== */}
-                    {unit.certificates && unit.certificates.length > 0 && (
-                        <div className="detail-section">
-                            <h3>
-                                <i className="fas fa-certificate"></i> Unit Certificates ({unit.certificates.length})
-                            </h3>
-                            <div className="certificates-grid">
-                                {unit.certificates.map((cert) => {
-                                    // Get file URL
-                                    const fileUrl = getFileUrl(cert.file || cert.file_url);
-                                    const fileName = getFileName(cert.file || cert.file_url || cert.file_name);
+          {unit.certificates && unit.certificates.length > 0 && (
+                    <div className="detail-section">
+                        <h3>
+                            <i className="fas fa-certificate"></i> Unit Certificates ({unit.certificates.length})
+                        </h3>
+                        <div className="certificates-grid">
+                            {unit.certificates.map((cert) => {
+                                // Get file URL - use file_url from database
+                                const fileUrl = getFileUrl(cert.file_url);
+                                const fileName = cert.file_name || getFileName(cert.file_url);
 
-                                    return (
-                                        <div key={cert.certificat_id || cert.Type} className="certificate-card">
-                                            <div className="certificate-header">
-                                                <i className="fas fa-certificate certificate-icon"></i>
-                                                <span className="certificate-type">{cert.Type}</span>
-                                                {cert.certificat_id && <span className="cert-id-badge">ID: {cert.certificat_id}</span>}
-                                            </div>
-                                            <div className="certificate-details">
-                                                <DetailItem
-                                                    label="Validity Date"
-                                                    value={cert.validity_date}
-                                                    icon="fas fa-calendar-alt"
-                                                />
-                                                
-                                                {cert.custom_type && (
-                                                    <DetailItem
-                                                        label="Custom Type"
-                                                        value={cert.custom_type}
-                                                        icon="fas fa-tag"
-                                                    />
-                                                )}
-
-                                                {/* File Preview Section */}
-                                                {fileUrl && (
-                                                    <div className="certificate-file-preview">
-                                                        <div className="file-preview-header">
-                                                            <div className="detail-label">
-                                                                <i className="fas fa-paperclip"></i>
-                                                                Certificate File
-                                                            </div>
-                                                          
-                                                        </div>
-                                                      <div className="file-actions">
-                                                              
-                                                         <a href={getFileUrl(cert.file_url)} target="_blank" rel="noopener noreferrer">
-                                                                View
-                                                      </a>
-                                                     <a href={getFileUrl(cert.file_url)} download={fileName}>
-                                                                Download
-                                                     </a>
-                                                   </div>
-                                                    </div>
-                                                )}
-                                            </div>
+                                return (
+                                    <div key={cert.certificat_id || cert.Type} className="certificate-card">
+                                        <div className="certificate-header">
+                                            <i className="fas fa-certificate certificate-icon"></i>
+                                            <span className="certificate-type">{cert.Type}</span>
+                                            {cert.certificat_id && <span className="cert-id-badge">ID: {cert.certificat_id}</span>}
                                         </div>
-                                    );
-                                })}
-                            </div>
+                                        <div className="certificate-details">
+                                            <DetailItem
+                                                label="Validity Date"
+                                                value={cert.validity_date}
+                                                icon="fas fa-calendar-alt"
+                                            />
+                                            
+                                            {cert.custom_type && (
+                                                <DetailItem
+                                                    label="Custom Type"
+                                                    value={cert.custom_type}
+                                                    icon="fas fa-tag"
+                                                />
+                                            )}
+
+                                            {/* ✅ FIXED: File Preview Section */}
+                                            {fileUrl && (
+                                                <div className="certificate-file-preview">
+                                                    <div className="file-preview-header">
+                                                        <div className="detail-label">
+                                                            <i className="fas fa-paperclip"></i>
+                                                            Certificate File
+                                                        </div>
+                                                        <span className="file-name-display">{fileName}</span>
+                                                    </div>
+                                                    <div className="file-actions">
+                                                        <a 
+                                                            href={fileUrl} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="btn-file-action"
+                                                        >
+                                                            <i className="fas fa-eye"></i> View
+                                                        </a>
+                                                        <a 
+                                                            href={fileUrl} 
+                                                            download={fileName}
+                                                            className="btn-file-action"
+                                                        >
+                                                            <i className="fas fa-download"></i> Download
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
-                    )}
+                    </div>
+                )}
                 </div>
             </div>
         </div>
