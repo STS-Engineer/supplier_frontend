@@ -1,8 +1,52 @@
 // SupplierManagement.jsx
 import React, { useState, useEffect } from 'react';
-import { toast} from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'
 import './SupplierManagement.css';
+
+
+// ==================== PDF VIEWER COMPONENT ====================
+const PDFViewer = ({ fileUrl, fileName }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    if (!fileUrl || !fileUrl.toLowerCase().endsWith('.pdf')) {
+        return null;
+    }
+
+    return (
+        <>
+            <button
+                type="button"
+                className="btn-icon btn-sm"
+                onClick={() => setIsOpen(true)}
+                title="Preview PDF"
+            >
+                <i className="fas fa-expand"></i>
+            </button>
+
+            {isOpen && (
+                <div className="pdf-viewer-modal" onClick={() => setIsOpen(false)}>
+                    <div className="pdf-viewer-content" onClick={(e) => e.stopPropagation()}>
+                        <div className="pdf-viewer-header">
+                            <h3>PDF Preview: {fileName}</h3>
+                            <button className="modal-close" onClick={() => setIsOpen(false)}>
+                                <i className="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div className="pdf-viewer-body">
+                            <iframe
+                                src={fileUrl}
+                                title={fileName}
+                                className="pdf-iframe"
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+        </>
+    );
+};
+// ==================== END PDF VIEWER ====================
 
 const SupplierManagement = () => {
     const [customers, setCustomers] = useState([]);
@@ -122,8 +166,8 @@ const SupplierManagement = () => {
         }
     }, [isCompleteCustomerModalOpen, completeCustomerData, editingCustomer]);
     // Add these functions after handleResponsibleChange:
-    const handleCertificateChange = (unitIndex, certIndex, field, value) => {
-        console.log('Certificate change:', unitIndex, certIndex, field, value);
+    const handleCertificateChange = (unitIndex, certIndex, field, value, file = null) => {
+        console.log('Certificate change:', unitIndex, certIndex, field, value, file);
 
         setCompleteCustomerData(prev => {
             const updated = JSON.parse(JSON.stringify(prev)); // Deep clone
@@ -141,12 +185,19 @@ const SupplierManagement = () => {
                     Type: '',
                     validity_date: '',
                     certificat_id: null,
-                    custom_type: ''
+                    custom_type: '',
+                    file: null,
+                    file_url: null
                 };
             }
 
             // Update the specific field
-            updated.units[unitIndex].certificates[certIndex][field] = value;
+            if (field === 'file') {
+                updated.units[unitIndex].certificates[certIndex].file = file;
+                updated.units[unitIndex].certificates[certIndex].file_name = file ? file.name : null;
+            } else {
+                updated.units[unitIndex].certificates[certIndex][field] = value;
+            }
 
             return updated;
         });
@@ -173,7 +224,10 @@ const SupplierManagement = () => {
                 Type: '',
                 validity_date: '',
                 certificat_id: null,
-                custom_type: ''
+                custom_type: '',
+                file: null,
+                file_url: null,
+                file_name: null
             });
 
             console.log(`Unit ${unitIndex} now has ${updated.units[unitIndex].certificates.length} certificates`);
@@ -214,138 +268,181 @@ const SupplierManagement = () => {
         setIsGroupModalOpen(true);
     };
 
-    const openEditCompleteCustomerModal = async (customer) => {
-        try {
-            setLoading(true);
+const openEditCompleteCustomerModal = async (customer) => {
+    try {
+        setLoading(true);
 
-            console.log('🔍 Opening edit modal for customer:', customer.supplier_name);
+        console.log('🔍 Opening edit modal for customer:', customer.supplier_name);
 
-            // Always fetch fresh data from the complete endpoint
-            const response = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/groups/${customer.supplier_id}/complete`);
-            if (!response.ok) throw new Error('Failed to fetch customer details');
+        // Always fetch fresh data from the complete endpoint
+        const response = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/groups/${customer.supplier_id}/complete`);
+        if (!response.ok) throw new Error('Failed to fetch customer details');
 
-            const customerData = await response.json();
-            console.log('🔍 Complete customer data from backend:', {
-                units: customerData.units?.length,
-                firstUnit: customerData.units?.[0],
-                certificatesInFirstUnit: customerData.units?.[0]?.certificates
-            });
+        const customerData = await response.json();
+        console.log('🔍 Complete customer data from backend:', {
+            units: customerData.units?.length,
+            firstUnit: customerData.units?.[0],
+            certificatesInFirstUnit: customerData.units?.[0]?.certificates,
+            mainplantsRaw: customerData.units?.[0]?.mainplants,
+            plant: customerData.units?.[0]?.plant,
+            top: customerData.units?.[0]?.top,
+            status: customerData.units?.[0]?.status,
+            category: customerData.units?.[0]?.category
+        });
 
-            setEditingCustomer(customerData);
+        setEditingCustomer(customerData);
 
-            // IMPORTANT: Map ALL unit properties
-            setCompleteCustomerData({
-                group: {
-                    supplier_name: customerData.supplier_name,
-                    description: customerData.description || ''
+        // Prepare the data to set
+        const newCompleteCustomerData = {
+            group: {
+                supplier_name: customerData.supplier_name,
+                description: customerData.description || ''
+            },
+            units: (customerData.units || []).map(unit => ({
+                // Basic Information
+                unit_id: unit.unit_id,
+                unit_name: unit.unit_name || '',
+                city: unit.city || '',
+                country: unit.country || '',
+                com_person_id: unit.com_person_id || null,
+                zone_name: unit.zone_name || '',
+                document_file: unit.document_file || null,
+                
+                // FIX: Handle mainplants properly - it could be string or array
+                mainplants: unit.mainplants ? 
+                    (Array.isArray(unit.mainplants) ? 
+                        unit.mainplants : 
+                        (typeof unit.mainplants === 'string' ? 
+                            unit.mainplants.split(',').map(item => item.trim()).filter(item => item !== '') : 
+                            []
+                        )
+                    ) : [],
+                
+                _openMainPlants: false, // initialize dropdown state
+                
+                plant: unit.plant || '',
+                top: unit.top || '',
+                status: unit.status || '',
+                category: unit.category || '',
+                responsible_text: unit.responsible || '', // Text field
+                
+                // Account Information
+                account_name: unit.account_name || '',
+                parent_account: unit.parent_account || '',
+                key_account: unit.key_account || false,
+                ke_account_manager: unit.ke_account_manager || '',
+                avo_carbon_main_contact: unit.avo_carbon_main_contact || '',
+                avo_carbon_tech_lead: unit.avo_carbon_tech_lead || '',
+                type: unit.type || '',
+                industry: unit.industry || '',
+                account_owner: unit.account_owner || '',
+                phone: unit.phone || '',
+                website: unit.website || '',
+                employees: unit.employees || '',
+                useful_information: unit.useful_information || '',
+                billing_account_number: unit.billing_account_number || '',
+                product_family: unit.product_family || '',
+                account_currency: unit.account_currency || '',
+
+                // Company Information
+                start_year: unit.start_year || '',
+                solvent_customer: unit.solvent_customer || '',
+                solvency_info: unit.solvency_info || '',
+                budget_avo_carbon: unit.budget_avo_carbon || '',
+                avo_carbon_potential_buisness: unit.avo_carbon_potential_buisness || '',
+                
+                // Address Information
+                billing_address_search: unit.billing_address_search || '',
+                billing_street: unit.billing_street || '',
+                billing_city: unit.billing_city || '',
+                billing_state: unit.billing_state || '',
+                billing_zip: unit.billing_zip || '',
+                billing_country: unit.billing_country || '',
+                shippping_address_search: unit.shippping_address_search || '',
+                shipping_street: unit.shipping_street || '',
+                shipping_city: unit.shipping_city || '',
+                shipping_state: unit.shipping_state || '',
+                shipping_zip: unit.shipping_zip || '',
+                shipping_country: unit.shipping_country || '',
+                copy_billing: unit.copy_billing || false,
+
+                // Agreements
+                confidentiality_agreement: unit.confidentiality_agreement || false,
+                quality_agreement: unit.quality_agreement || false,
+                terms_purshase: unit.terms_purshase || '',
+                logistics_agreement: unit.logistics_agreement || false,
+                payment_conditions: unit.payment_conditions || '',
+                tech_key_account: unit.tech_key_account || '',
+
+                // Responsible Person
+                responsible: unit.responsible ? {
+                    Person_id: unit.responsible.Person_id,
+                    first_name: unit.responsible.first_name || '',
+                    last_name: unit.responsible.last_name || '',
+                    job_title: unit.responsible.job_title || '',
+                    email: unit.responsible.email || '',
+                    phone_number: unit.responsible.phone_number || '',
+                    role: unit.responsible.role || 'Contact',
+                    zone_name: unit.responsible.zone_name || ''
+                } : {
+                    Person_id: null,
+                    first_name: '',
+                    last_name: '',
+                    job_title: '',
+                    email: '',
+                    phone_number: '',
+                    role: 'Contact',
+                    zone_name: ''
                 },
-                units: (customerData.units || []).map(unit => ({
-                    // Basic Information
-                    unit_id: unit.unit_id,
-                    unit_name: unit.unit_name || '',
-                    city: unit.city || '',
-                    country: unit.country || '',
-                    com_person_id: unit.com_person_id || null,
-                    zone_name: unit.zone_name || '',
 
-                    // Account Information
-                    account_name: unit.account_name || '',
-                    parent_account: unit.parent_account || '',
-                    key_account: unit.key_account || false,
-                    ke_account_manager: unit.ke_account_manager || '',
-                    avo_carbon_main_contact: unit.avo_carbon_main_contact || '',
-                    avo_carbon_tech_lead: unit.avo_carbon_tech_lead || '',
-                    type: unit.type || '',
-                    industry: unit.industry || '',
-                    account_owner: unit.account_owner || '',
-                    phone: unit.phone || '',
-                    website: unit.website || '',
-                    employees: unit.employees || '',
-                    useful_information: unit.useful_information || '',
-                    billing_account_number: unit.billing_account_number || '',
-                    product_family: unit.product_family || '',
-                    account_currency: unit.account_currency || '',
+                // Certificates
+                certificates: (unit.certificates || []).map(cert => {
+                    console.log('📋 Certificate data:', cert);
+                    // Get file URL - handle both direct URLs and relative paths
+                    let file_url = null;
+                    if (cert.file) {
+                        if (cert.file.startsWith('http')) {
+                            file_url = cert.file;
+                        } else if (cert.file.startsWith('/uploads')) {
+                            file_url = `http://localhost:5000${cert.file}`;
+                        }
+                    }
+                    return {
+                        certificat_id: cert.certificat_id || null,
+                        Type: cert.Type || '',
+                        validity_date: cert.validity_date || '',
+                        custom_type: cert.custom_type || '',
+                        file: null, // Don't store File object, just track it separately
+                        file_url: file_url || cert.file_url || null,
+                        file_name: cert.file ? cert.file.split('/').pop() : null
+                    };
+                })
+            }))
+        };
 
-                    // Company Information
-                    start_year: unit.start_year || '',
-                    solvent_customer: unit.solvent_customer || '',
-                    solvency_info: unit.solvency_info || '',
-                    budget_avo_carbon: unit.budget_avo_carbon || '',
-                    avo_carbon_potential_buisness: unit.avo_carbon_potential_buisness || '',
+        console.log('✅ CompleteCustomerData after mapping:', {
+            units: newCompleteCustomerData.units?.length,
+            firstUnitName: newCompleteCustomerData.units?.[0]?.unit_name,
+            mainplants: newCompleteCustomerData.units?.[0]?.mainplants,
+            plant: newCompleteCustomerData.units?.[0]?.plant,
+            top: newCompleteCustomerData.units?.[0]?.top,
+            status: newCompleteCustomerData.units?.[0]?.status,
+            category: newCompleteCustomerData.units?.[0]?.category,
+            certificatesCount: newCompleteCustomerData.units?.[0]?.certificates?.length
+        });
 
-                    // Address Information
-                    billing_address_search: unit.billing_address_search || '',
-                    billing_street: unit.billing_street || '',
-                    billing_city: unit.billing_city || '',
-                    billing_state: unit.billing_state || '',
-                    billing_zip: unit.billing_zip || '',
-                    billing_country: unit.billing_country || '',
-                    shippping_address_search: unit.shippping_address_search || '',
-                    shipping_street: unit.shipping_street || '',
-                    shipping_city: unit.shipping_city || '',
-                    shipping_state: unit.shipping_state || '',
-                    shipping_zip: unit.shipping_zip || '',
-                    shipping_country: unit.shipping_country || '',
-                    copy_billing: unit.copy_billing || false,
-
-                    // Agreements
-                    confidentiality_agreement: unit.confidentiality_agreement || false,
-                    quality_agreement: unit.quality_agreement || false,
-                    terms_purshase: unit.terms_purshase || '',
-                    logistics_agreement: unit.logistics_agreement || false,
-                    payment_conditions: unit.payment_conditions || '',
-                    tech_key_account: unit.tech_key_account || '',
-
-                    // Responsible Person
-                    responsible: unit.responsible ? {
-                        Person_id: unit.responsible.Person_id,
-                        first_name: unit.responsible.first_name || '',
-                        last_name: unit.responsible.last_name || '',
-                        job_title: unit.responsible.job_title || '',
-                        email: unit.responsible.email || '',
-                        phone_number: unit.responsible.phone_number || '',
-                        role: unit.responsible.role || 'Contact',
-                        zone_name: unit.responsible.zone_name || ''
-                    } : {
-                        Person_id: null,
-                        first_name: '',
-                        last_name: '',
-                        job_title: '',
-                        email: '',
-                        phone_number: '',
-                        role: 'Contact',
-                        zone_name: ''
-                    },
-
-                    // Certificates - IMPORTANT: Ensure this is always an array
-                    certificates: (unit.certificates || []).map(cert => {
-                        console.log('📋 Certificate data:', cert);
-                        return {
-                            certificat_id: cert.certificat_id || null,
-                            Type: cert.Type || '', // Make sure this matches backend response
-                            validity_date: cert.validity_date || '', // Make sure this matches backend response
-                            custom_type: cert.custom_type || ''
-                        };
-                    })
-                }))
-            });
-
-            console.log('✅ CompleteCustomerData after mapping:', {
-                units: completeCustomerData.units?.length,
-                firstUnitName: completeCustomerData.units?.[0]?.unit_name,
-                certificatesCount: completeCustomerData.units?.[0]?.certificates?.length
-            });
-
-            setFormErrors({});
-            setIsCompleteCustomerModalOpen(true);
-        } catch (err) {
-            console.error('Error fetching customer:', err);
-            setError(err.message);
-            toast.error(`Error loading customer data: ${err.message}`);
-        } finally {
-            setLoading(false);
-        }
-    };
+        // Set the state
+        setCompleteCustomerData(newCompleteCustomerData);
+        setFormErrors({});
+        setIsCompleteCustomerModalOpen(true);
+    } catch (err) {
+        console.error('Error fetching customer:', err);
+        setError(err.message);
+        toast.error(`Error loading customer data: ${err.message}`);
+    } finally {
+        setLoading(false);
+    }
+};
 
     const openDeleteGroupModal = (group) => {
         setGroupToDelete(group);
@@ -423,6 +520,14 @@ const SupplierManagement = () => {
                     city: '',
                     country: '',
                     zone_name: '',
+                    document_file: null,
+                    mainplants: [],
+                    _openMainPlants: false,
+                    plant: '',
+                    top: '',
+                    status: '',
+                    category: '',
+                    responsible_text: '', // ADD THIS LINE
                     // Account Information
                     account_name: '',
                     parent_account: '',
@@ -599,6 +704,13 @@ const SupplierManagement = () => {
                         country: unit.country || null,
                         com_person_id: unit.responsible?.Person_id || null,
                         zone_name: unit.zone_name || null,
+                        document_file: unit.document_file || null,
+                        mainplants: unit.mainplants || null,
+                        plant: unit.plant || null,
+                        top: unit.top || null,
+                        status: unit.status || null,
+                        category: unit.category || null,
+                        responsible: unit.responsible_text || (typeof unit.responsible === 'string' ? unit.responsible : null),
                         // Account Information
                         account_name: unit.account_name || null,
                         parent_account: unit.parent_account || null,
@@ -644,6 +756,17 @@ const SupplierManagement = () => {
                         payment_conditions: unit.payment_conditions || null,
                         tech_key_account: unit.tech_key_account || null
                     };
+
+                    // Log data for debugging
+                    console.log('📤 Sending unit update data:', {
+                        unit_name: unit.unit_name,
+                        mainplants: unit.mainplants,
+                        responsible: unit.responsible_text || unit.responsible,
+                        plant: unit.plant,
+                        top: unit.top,
+                        status: unit.status,
+                        category: unit.category
+                    });
 
                     let savedUnit;
 
@@ -725,6 +848,13 @@ const SupplierManagement = () => {
                         country: unit.country || null,
                         com_person_id: unit.responsible?.Person_id || null,
                         zone_name: unit.zone_name || null,
+                        document_file: unit.document_file || null,
+                        mainplants: unit.mainplants || null,
+                        plant: unit.plant || null,
+                        top: unit.top || null,
+                        status: unit.status || null,
+                        category: unit.category || null,
+                        responsible: unit.responsible_text || (typeof unit.responsible === 'string' ? unit.responsible : null),
                         // Account Information
                         account_name: unit.account_name || null,
                         parent_account: unit.parent_account || null,
@@ -770,6 +900,17 @@ const SupplierManagement = () => {
                         payment_conditions: unit.payment_conditions || null,
                         tech_key_account: unit.tech_key_account || null
                     };
+
+                    // Log data for debugging
+                    console.log('📤 Sending unit create data:', {
+                        unit_name: unit.unit_name,
+                        mainplants: unit.mainplants,
+                        responsible: unit.responsible_text || unit.responsible,
+                        plant: unit.plant,
+                        top: unit.top,
+                        status: unit.status,
+                        category: unit.category
+                    });
 
                     // Create new unit
                     const unitResponse = await fetch('https://supplier-back.azurewebsites.net/ajouter/api/units', {
@@ -819,6 +960,9 @@ const SupplierManagement = () => {
     // Add this helper function to handle certificates
     const handleUnitCertificates = async (unit, unitId) => {
         try {
+            console.log('📁 Handling certificates for unit:', unit.unit_name, 'ID:', unitId);
+            console.log('Certificates to process:', unit.certificates?.length || 0);
+
             // First, get existing certificates for this unit
             const existingCertsResponse = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/certificates/by-unit/${unitId}`);
             const existingCertificates = existingCertsResponse.ok ? await existingCertsResponse.json() : [];
@@ -833,59 +977,114 @@ const SupplierManagement = () => {
                 !currentCertIds.includes(cert.certificat_id)
             );
 
+            console.log('Certificates to delete:', certsToDelete.length);
+
             // Delete certificates that were removed
             const deletePromises = certsToDelete.map(async (cert) => {
+                console.log('Deleting certificate:', cert.certificat_id);
                 await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/certificates/${cert.certificat_id}`, {
                     method: 'DELETE',
                 });
             });
 
             // Handle certificate updates/creations
-            const updatePromises = (unit.certificates || []).map(async (cert) => {
-                const certData = {
-                    unit_id: unitId,
-                    Type: cert.Type || cert.custom_type || '',
-                    Date: cert.validity_date
-                };
+            const updatePromises = (unit.certificates || []).map(async (cert, index) => {
+                console.log(`📤 Processing certificate ${index + 1}:`, {
+                    id: cert.certificat_id,
+                    type: cert.Type,
+                    date: cert.validity_date,
+                    hasFile: !!cert.file,
+                    fileObject: cert.file instanceof File,
+                    fileUrl: cert.file_url
+                });
+
+                // Create FormData for file upload
+                const formData = new FormData();
+
+                // IMPORTANT: Append ALL required fields
+                formData.append('unit_id', unitId.toString());
+                formData.append('Type', cert.Type || cert.custom_type || '');
+
+                // Use 'Date' or 'validity_date' depending on backend expectation
+                // Try both if unsure
+                formData.append('Date', cert.validity_date || cert.Date || '');
+                formData.append('validity_date', cert.validity_date || cert.Date || '');
+
+                if (cert.custom_type) {
+                    formData.append('custom_type', cert.custom_type);
+                }
+
+                // Handle file upload
+                if (cert.file && cert.file instanceof File) {
+                    console.log('📤 Uploading file:', cert.file.name, 'size:', cert.file.size, 'type:', cert.file.type);
+                    formData.append('file', cert.file);
+                } else if (cert.file_url && !cert.file) {
+                    // If there's a file URL but no file object, keep existing file
+                    formData.append('keepExistingFile', 'true');
+                    console.log('🔗 Keeping existing file:', cert.file_url);
+                }
+
+                // Debug: Log FormData contents
+                console.log('📋 FormData contents:');
+                for (let [key, value] of formData.entries()) {
+                    console.log(`  ${key}:`, value instanceof File ? `File: ${value.name}` : value);
+                }
+
+                let response;
+                let url;
 
                 if (cert.certificat_id) {
                     // Update existing certificate
-                    const certResponse = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/certificates/${cert.certificat_id}`, {
+                    console.log(`🔄 Updating certificate ${cert.certificat_id}`);
+                    url = `https://supplier-back.azurewebsites.net/ajouter/api/certificates/${cert.certificat_id}`;
+                    response = await fetch(url, {
                         method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(certData),
+                        body: formData,
+                        // DO NOT set Content-Type header for FormData
                     });
-
-                    if (!certResponse.ok) {
-                        throw new Error(`Failed to update certificate for unit ${unit.unit_name}`);
-                    }
-
-                    return certResponse.json();
                 } else {
                     // Create new certificate
-                    const certResponse = await fetch('https://supplier-back.azurewebsites.net/ajouter/api/certificates', {
+                    console.log('➕ Creating new certificate');
+                    url = 'https://supplier-back.azurewebsites.net/ajouter/api/certificates';
+                    response = await fetch(url, {
                         method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(certData),
+                        body: formData,
+                        // DO NOT set Content-Type header for FormData
+                    });
+                }
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Certificate request failed:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        error: errorText,
+                        url: url
                     });
 
-                    if (!certResponse.ok) {
-                        throw new Error(`Failed to create certificate for unit ${unit.unit_name}`);
+                    // Try to parse JSON error
+                    let errorMessage = `Failed to ${cert.certificat_id ? 'update' : 'create'} certificate`;
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorMessage = errorJson.error || errorMessage;
+                    } catch (e) {
+                        errorMessage = errorText || errorMessage;
                     }
 
-                    return certResponse.json();
+                    throw new Error(`${errorMessage} for unit ${unit.unit_name}`);
                 }
+
+                const result = await response.json();
+                console.log('✅ Certificate saved:', result);
+                return result;
             });
 
             // Wait for all operations to complete
             await Promise.all([...deletePromises, ...updatePromises]);
+            console.log('✅ All certificate operations completed');
 
         } catch (error) {
-            console.error('Error handling certificates:', error);
+            console.error('❌ Error handling certificates:', error);
             throw error;
         }
     };
@@ -1143,6 +1342,27 @@ const CompleteCustomerModal = ({
 
     const addFirstUnit = () => {
         onAddUnit();
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            // Close all mainplants dropdowns if clicked outside
+            const isMultiSelect = e.target.closest('.multi-select');
+            if (!isMultiSelect) {
+                data.units.forEach((_, index) => {
+                    if (data.units[index]?._openMainPlants) {
+                        onUnitChange(index, '_openMainPlants', false);
+                    }
+                });
+            }
+        };
+
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, [data.units, onUnitChange]);
+
+    const toggleMainPlantsDropdown = (unitIndex) => {
+        onUnitChange(unitIndex, '_openMainPlants', !data.units[unitIndex]?._openMainPlants);
     };
 
     return (
@@ -1906,10 +2126,167 @@ const CompleteCustomerModal = ({
                                     </select>
                                 </div>
 
-                      
+
+                                {/* Additional Information Section */}
+                                <div className="section-subheader">
+                                    <h5><i className="fas fa-info-circle"></i> Additional Information</h5>
+                                </div>
+
+                                <div className="form-row">
+                                    {/* ===== MAIN PLANTS (MULTI SELECT) ===== */}
+                                    {/* ===== MAIN PLANTS (MULTI SELECT) ===== */}
+                                    <div className="form-group">
+                                        <label className="form-label">Main Plants</label>
+
+                                        <div className="multi-select">
+                                            <div
+                                                className="multi-select-control"
+                                                onClick={() => toggleMainPlantsDropdown(unitIndex)}
+                                            >
+                                                <span className="multi-select-value">
+                                                    {Array.isArray(unit.mainplants) && unit.mainplants.length > 0
+                                                        ? unit.mainplants.join(", ")
+                                                        : "Select main plants"}
+                                                </span>
+                                                <span className="arrow">▾</span>
+                                            </div>
+
+                                            {unit._openMainPlants && (
+                                                <div className="multi-select-dropdown">
+                                                    {[
+                                                        "Sceet", "Same", "Kunshan", "Anhui", "Tianjin",
+                                                        "Monterrey", "India", "Poitiers", "Cyclam",
+                                                        "Frankfurt", "Korea"
+                                                    ].map((plant) => {
+                                                        const selected = Array.isArray(unit.mainplants)
+                                                            ? unit.mainplants.includes(plant)
+                                                            : false;
+
+                                                        return (
+                                                            <div
+                                                                key={plant}
+                                                                className={`multi-option ${selected ? "selected" : ""}`}
+                                                                onClick={() => {
+                                                                    let updated = Array.isArray(unit.mainplants)
+                                                                        ? [...unit.mainplants]
+                                                                        : [];
+
+                                                                    if (selected) {
+                                                                        updated = updated.filter(p => p !== plant);
+                                                                    } else {
+                                                                        updated.push(plant);
+                                                                    }
+
+                                                                    onUnitChange(unitIndex, "mainplants", updated);
+                                                                }}
+                                                            >
+                                                                <input type="checkbox" checked={selected} readOnly />
+                                                                <span>{plant}</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+
+
+                                    {/* ===== PLANT (SINGLE SELECT) ===== */}
+                                    <div className="form-group">
+                                        <label htmlFor={`plant_${unitIndex}`} className="form-label">
+                                            Plant
+                                        </label>
+                                        <select
+                                            id={`plant_${unitIndex}`}
+                                            value={unit.plant || ''}
+                                            onChange={(e) => onUnitChange(unitIndex, 'plant', e.target.value)}
+                                            className="form-input"
+                                        >
+                                            <option value="">Select plant</option>
+                                            <option value="Sceet">Sceet</option>
+                                            <option value="Same">Same</option>
+                                            <option value="Kunshan">Kunshan</option>
+                                            <option value="Anhui">Anhui</option>
+                                            <option value="Tianjin">Tianjin</option>
+                                            <option value="Monterrey">Monterrey</option>
+                                            <option value="India">India</option>
+                                            <option value="Poitiers">Poitiers</option>
+                                            <option value="Cyclam">Cyclam</option>
+                                            <option value="Frankfurt">Frankfurt</option>
+                                            <option value="Korea">Korea</option>
+                                        </select>
+                                    </div>
+
+
+                                </div>
+
+
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label htmlFor={`top_${unitIndex}`} className="form-label">
+                                            TOP (Terms of Payment)
+                                        </label>
+                                        <select
+                                            id={`top_${unitIndex}`}
+                                            value={unit.top || ''}
+                                            onChange={(e) => onUnitChange(unitIndex, 'top', e.target.value)}
+                                            className="form-input"
+                                        >
+                                            <option value="">Select TOP</option>
+                                            <option value="30 days end of month or +">30 days end of month or +</option>
+                                            <option value="30 days net">30 days net</option>
+                                            <option value="60 days net">60 days net</option>
+                                            <option value="15 days net">15 days net</option>
+                                            <option value="60 days eom or +">60 days eom or +</option>
+                                            <option value="Cash in Advance">Cash in Advance</option>
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label htmlFor={`status_${unitIndex}`} className="form-label">
+                                            Status
+                                        </label>
+                                        <select
+                                            id={`status_${unitIndex}`}
+                                            value={unit.status || ''}
+                                            onChange={(e) => onUnitChange(unitIndex, 'status', e.target.value)}
+                                            className="form-input"
+                                        >
+                                            <option value="">Select status</option>
+                                            <option value="Active">Active</option>
+                                            <option value="Inactive">Inactive</option>
+                                            <option value="Pending">Pending</option>
+                                            <option value="Suspended">Suspended</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label htmlFor={`category_${unitIndex}`} className="form-label">
+                                            Category
+                                        </label>
+                                        <select
+                                            id={`category_${unitIndex}`}
+                                            value={unit.category || ''}
+                                            onChange={(e) => onUnitChange(unitIndex, 'category', e.target.value)}
+                                            className="form-input"
+                                        >
+                                            <option value="">Select category</option>
+                                            <option value="Manufacturing">Manufacturing</option>
+                                            <option value="Service">Service</option>
+                                            <option value="Retail">Retail</option>
+                                            <option value="Wholesale">Wholesale</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+
+
+                                </div>
+
 
                                 {/* ==================== CERTIFICATES SECTION ==================== */}
-                                {/* MOVE THIS INSIDE THE UNIT MAPPING */}
+
                                 <div className="unit-certificates-section">
                                     <div className="section-subheader">
                                         <div className="section-header">
@@ -1937,6 +2314,7 @@ const CompleteCustomerModal = ({
                                     )}
 
                                     {/* Certificates List */}
+
                                     {unit.certificates && unit.certificates.map((cert, certIndex) => (
                                         <div key={certIndex} className="certificate-form-section">
                                             <div className="certificate-header">
@@ -2018,6 +2396,61 @@ const CompleteCustomerModal = ({
                                                     />
                                                 </div>
                                             )}
+
+                                            {/* File Upload Section */}
+                                            <div className="form-group">
+                                                <label htmlFor={`cert_file_${unitIndex}_${certIndex}`} className="form-label">
+                                                    Certificate File
+                                                </label>
+                                                <div className="file-upload-container">
+                                                    <input
+                                                        type="file"
+                                                        id={`cert_file_${unitIndex}_${certIndex}`}
+                                                        onChange={(e) => {
+                                                            const file = e.target.files[0];
+                                                            if (file) {
+                                                                onCertificateChange(unitIndex, certIndex, 'file', null, file);
+                                                            }
+                                                        }}
+                                                        className="file-input"
+                                                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                                    />
+                                                    <div className="file-info">
+                                                        {cert.file ? (
+                                                            <div className="file-preview">
+                                                                <i className="fas fa-file"></i>
+                                                                <span className="file-name">
+                                                                    {cert.file.name || cert.file_name || 'Uploaded file'}
+                                                                </span>
+                                                                {cert.file_url && (
+                                                                    <a
+                                                                        href={cert.file_url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="file-preview-link"
+                                                                    >
+                                                                        <i className="fas fa-eye"></i> Preview
+                                                                    </a>
+                                                                )}
+                                                                <button
+                                                                    type="button"
+                                                                    className="btn-icon btn-sm"
+                                                                    onClick={() => onCertificateChange(unitIndex, certIndex, 'file', null, null)}
+                                                                    title="Remove file"
+                                                                >
+                                                                    <i className="fas fa-times"></i>
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="file-upload-placeholder">
+                                                                <i className="fas fa-cloud-upload-alt"></i>
+                                                                <span>Click to upload certificate file (PDF, JPG, PNG, DOC)</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <small className="file-hint">Max file size: 10MB. Supported formats: PDF, JPG, PNG, DOC</small>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -2285,8 +2718,40 @@ const UnitItem = ({ unit, onClick }) => (
 );
 
 // Unit Modal Component
+// Unit Modal Component
 const UnitModal = ({ unit, onClose }) => {
     if (!unit) return null;
+
+    // Helper function to get full file URL
+    const getFileUrl = (filePath) => {
+        if (!filePath) return null;
+        if (filePath.startsWith('http')) {
+            return filePath;
+        } else if (filePath.startsWith('/uploads')) {
+            return `http://localhost:5000${filePath}`;
+        } else if (filePath.startsWith('uploads')) {
+            return `https://supplier-back.azurewebsites.net/${filePath}`;
+        }
+        return filePath;
+    };
+
+    // Helper function to get file type icon
+    const getFileIcon = (fileName) => {
+        if (!fileName) return 'fas fa-file';
+        const ext = fileName.split('.').pop().toLowerCase();
+        if (ext === 'pdf') return 'fas fa-file-pdf';
+        if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'].includes(ext)) return 'fas fa-file-image';
+        if (['doc', 'docx'].includes(ext)) return 'fas fa-file-word';
+        if (['xls', 'xlsx'].includes(ext)) return 'fas fa-file-excel';
+        if (['zip', 'rar', '7z'].includes(ext)) return 'fas fa-file-archive';
+        return 'fas fa-file';
+    };
+
+    // Helper function to get file name
+    const getFileName = (filePath) => {
+        if (!filePath) return 'Certificate';
+        return filePath.split('/').pop();
+    };
 
     return (
         <div className="modal-overlay" onClick={onClose}>
@@ -2302,6 +2767,7 @@ const UnitModal = ({ unit, onClose }) => {
                 </div>
 
                 <div className="modal-body">
+                    {/* Unit Information Section */}
                     <div className="detail-section">
                         <h3>
                             <i className="fas fa-info-circle"></i> Unit Information
@@ -2312,10 +2778,10 @@ const UnitModal = ({ unit, onClose }) => {
                             <DetailItem label="City" value={unit.city} />
                             <DetailItem label="Country" value={unit.country} />
                             <DetailItem label="Zone" value={unit.zone_name} />
-
                         </div>
                     </div>
-                    {/* Account Information */}
+
+                    {/* Account Information Section */}
                     <div className="detail-section">
                         <h3>
                             <i className="fas fa-building"></i> Account Information
@@ -2340,7 +2806,7 @@ const UnitModal = ({ unit, onClose }) => {
                         </div>
                     </div>
 
-                    {/* Company Information */}
+                    {/* Company Information Section */}
                     <div className="detail-section">
                         <h3>
                             <i className="fas fa-info-circle"></i> Company Information
@@ -2354,12 +2820,11 @@ const UnitModal = ({ unit, onClose }) => {
                         </div>
                     </div>
 
-                    {/* Address Information */}
+                    {/* Address Information Section */}
                     <div className="detail-section">
                         <h3>
                             <i className="fas fa-map-marker-alt"></i> Address Information
                         </h3>
-
                         <div className="address-section">
                             <h4>Billing Address</h4>
                             <div className="detail-grid">
@@ -2370,7 +2835,6 @@ const UnitModal = ({ unit, onClose }) => {
                                 <DetailItem label="Billing Country" value={unit.billing_country} />
                             </div>
                         </div>
-
                         <div className="address-section">
                             <h4>Shipping Address</h4>
                             <div className="detail-grid">
@@ -2381,11 +2845,10 @@ const UnitModal = ({ unit, onClose }) => {
                                 <DetailItem label="Shipping Country" value={unit.shipping_country} />
                             </div>
                         </div>
-
                         <DetailItem label="Copy Billing to Shipping" value={unit.copy_billing ? 'Yes' : 'No'} />
                     </div>
 
-                    {/* Agreements */}
+                    {/* Agreements Section */}
                     <div className="detail-section">
                         <h3>
                             <i className="fas fa-file-contract"></i> Agreements
@@ -2400,6 +2863,47 @@ const UnitModal = ({ unit, onClose }) => {
                         </div>
                     </div>
 
+                    {/* Additional Information Section */}
+                    <div className="detail-section">
+                        <h3>
+                            <i className="fas fa-info-circle"></i> Additional Information
+                        </h3>
+                        <div className="detail-grid">
+                            <DetailItem label="Main Plants" value={unit.mainplants} />
+                            <DetailItem label="Plant" value={unit.plant} />
+                            <DetailItem label="TOP" value={unit.top} />
+                            <DetailItem label="Status" value={unit.status} />
+                            <DetailItem label="Category" value={unit.category} />
+                            <DetailItem label="Responsible (Text)" value={unit.responsible_text} />
+
+                            {/* Document File */}
+                            {unit.document_file && (
+                                <div className="detail-item">
+                                    <div className="detail-label">
+                                        <i className="fas fa-file"></i>
+                                        Document File
+                                    </div>
+                                    <div className="detail-value">
+                                        <div className="file-preview-container">
+                                            <a
+                                                href={getFileUrl(unit.document_file)}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="file-link"
+                                            >
+                                                <i className="fas fa-download"></i> Download Document
+                                            </a>
+                                            <span className="file-name">
+                                                {getFileName(unit.document_file)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Responsible Person Section */}
                     {unit.responsible && (
                         <div className="detail-section">
                             <h3>
@@ -2415,73 +2919,114 @@ const UnitModal = ({ unit, onClose }) => {
                                             {unit.responsible.first_name} {unit.responsible.last_name}
                                         </h4>
                                         <p className="person-role">
-                                            <span
-                                                className={`role-badge ${unit.responsible.role?.toLowerCase()}`}
-                                            >
+                                            <span className={`role-badge ${unit.responsible.role?.toLowerCase()}`}>
                                                 {unit.responsible.role}
                                             </span>
                                         </p>
                                     </div>
                                 </div>
                                 <div className="person-details">
-                                    <DetailItem
-                                        label="Job Title"
-                                        value={unit.responsible.job_title}
-                                        icon="fas fa-briefcase"
-                                    />
-                                    <DetailItem
-                                        label="Email"
-                                        value={unit.responsible.email}
-                                        icon="fas fa-envelope"
-                                        isEmail
-                                    />
-                                    <DetailItem
-                                        label="Phone"
-                                        value={unit.responsible.phone_number}
-                                        icon="fas fa-phone"
-                                        isPhone
-                                    />
-                                    <DetailItem
-                                        label="Zone"
-                                        value={unit.responsible.zone_name}
-                                        icon="fas fa-map-marker-alt"
-                                    />
+                                    <DetailItem label="Job Title" value={unit.responsible.job_title} icon="fas fa-briefcase" />
+                                    <DetailItem label="Email" value={unit.responsible.email} icon="fas fa-envelope" isEmail />
+                                    <DetailItem label="Phone" value={unit.responsible.phone_number} icon="fas fa-phone" isPhone />
+                                    <DetailItem label="Zone" value={unit.responsible.zone_name} icon="fas fa-map-marker-alt" />
                                 </div>
                             </div>
                         </div>
                     )}
-                </div>
-                {/* ==================== CERTIFICATES SECTION ==================== */}
-                {unit.certificates && unit.certificates.length > 0 && (
-                    <div className="detail-section">
-                        <h3>
-                            <i className="fas fa-certificate"></i> Unit Certificates
-                        </h3>
-                        <div className="certificates-grid">
-                            {unit.certificates.map((cert) => (
-                                <div key={cert.certificat_id} className="certificate-card">
-                                    <div className="certificate-header">
-                                        <i className="fas fa-certificate certificate-icon"></i>
-                                        <span className="certificate-type">{cert.Type}</span>
-                                    </div>
-                                    <div className="certificate-details">
-                                        <DetailItem
-                                            label="Validity Date"
-                                            value={cert.validity_date}
-                                            icon="fas fa-calendar-alt"
-                                        />
 
-                                    </div>
-                                </div>
-                            ))}
+                    {/* ==================== CERTIFICATES SECTION ==================== */}
+                    {unit.certificates && unit.certificates.length > 0 && (
+                        <div className="detail-section">
+                            <h3>
+                                <i className="fas fa-certificate"></i> Unit Certificates ({unit.certificates.length})
+                            </h3>
+                            <div className="certificates-grid">
+                                {unit.certificates.map((cert) => {
+                                    // Get file URL
+                                    const fileUrl = getFileUrl(cert.file || cert.file_url);
+                                    const fileName = getFileName(cert.file || cert.file_url || cert.file_name);
+
+                                    return (
+                                        <div key={cert.certificat_id || cert.Type} className="certificate-card">
+                                            <div className="certificate-header">
+                                                <i className="fas fa-certificate certificate-icon"></i>
+                                                <span className="certificate-type">{cert.Type}</span>
+                                                {cert.certificat_id && <span className="cert-id-badge">ID: {cert.certificat_id}</span>}
+                                            </div>
+                                            <div className="certificate-details">
+                                                <DetailItem
+                                                    label="Validity Date"
+                                                    value={cert.validity_date}
+                                                    icon="fas fa-calendar-alt"
+                                                />
+                                                
+                                                {cert.custom_type && (
+                                                    <DetailItem
+                                                        label="Custom Type"
+                                                        value={cert.custom_type}
+                                                        icon="fas fa-tag"
+                                                    />
+                                                )}
+
+                                                {/* File Preview Section */}
+                                                {fileUrl && (
+                                                    <div className="certificate-file-preview">
+                                                        <div className="file-preview-header">
+                                                            <div className="detail-label">
+                                                                <i className="fas fa-paperclip"></i>
+                                                                Certificate File
+                                                            </div>
+                                                          
+                                                        </div>
+                                                      <div className="file-actions">
+                                                              
+                                                                
+                                                                {/* View File Link */}
+                                                                <a
+                                                                    href={fileUrl}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="file-action-btn"
+                                                                    title="View File"
+                                                                >
+                                                                    <i className={getFileIcon(fileName)}></i>
+                                                                    <span>View</span>
+                                                                </a>
+                                                                
+                                                                {/* Download Link */}
+                                                                <a
+                                                                    href={fileUrl}
+                                                                    download={fileName}
+                                                                    className="file-action-btn"
+                                                                    title="Download File"
+                                                                >
+                                                                    <i className="fas fa-download"></i>
+                                                                    <span>Download</span>
+                                                                </a>
+                                                            </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );
 };
 
+// Add this helper function for file size formatting
+const formatFileSize = (bytes) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+};
 // Detail Item Component
 const DetailItem = ({ label, value, icon, isEmail = false, isPhone = false }) => {
     if (!value) return null;
