@@ -2682,17 +2682,17 @@ const UnitModal = ({ unit, onClose }) => {
     if (!unit) return null;
 
     // Helper function to get full file URL
-    const getFileUrl = (filePath) => {
-        if (!filePath) return null;
-        if (filePath.startsWith('http')) {
-            return filePath;
-        } else if (filePath.startsWith('/uploads')) {
-            return `https://supplier-back.azurewebsites.net${filePath}`;
-        } else if (filePath.startsWith('uploads')) {
-            return `https://supplier-back.azurewebsites.net/${filePath}`;
-        }
-        return filePath;
-    };
+   const getFileUrl = (fileUrl) => {
+    if (!fileUrl) return null;
+    
+    // If it already has the full URL, use it as is
+    if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
+        return fileUrl;
+    }
+    
+    // Otherwise, prepend the base URL
+    return `https://supplier-back.azurewebsites.net${fileUrl}`;
+};
 
     // Helper function to get file type icon
     const getFileIcon = (fileName) => {
