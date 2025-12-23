@@ -2825,7 +2825,7 @@ const UnitModal = ({ unit, onClose }) => {
                             <DetailItem label="TOP" value={unit.top} />
                             <DetailItem label="Status" value={unit.status} />
                             <DetailItem label="Category" value={unit.category} />
-                            <DetailItem label="Responsible (Text)" value={unit.responsible_text} />
+                            <DetailItem label="Responsible" value={unit.responsible_text} />
 
                             {/* Document File */}
                             {unit.document_file && (
