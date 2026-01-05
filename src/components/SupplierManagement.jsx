@@ -2096,7 +2096,7 @@ const CompleteCustomerModal = ({
                                     {/* ===== MAIN PLANTS (MULTI SELECT) ===== */}
                                     {/* ===== MAIN PLANTS (MULTI SELECT) ===== */}
                                     <div className="form-group">
-                                        <label className="form-label">Main Plants</label>
+                                        <label className="form-label">Plant to be delivered</label>
 
                                         <div className="multi-select">
                                             <div
@@ -2820,7 +2820,7 @@ const UnitModal = ({ unit, onClose }) => {
                             <i className="fas fa-info-circle"></i> Additional Information
                         </h3>
                         <div className="detail-grid">
-                            <DetailItem label="Main Plants" value={unit.mainplants} />
+                            <DetailItem label="Plant to be delivered" value={unit.mainplants} />
                             <DetailItem label="Plant" value={unit.plant} />
                             <DetailItem label="TOP" value={unit.top} />
                             <DetailItem label="Status" value={unit.status} />
