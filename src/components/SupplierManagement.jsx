@@ -3004,8 +3004,6 @@ const UnitModal = ({ unit, onClose }) => {
                             <div className="certificates-grid">
                                 {unit.certificates.map((cert) => {
                                     const fileUrl = cert.file_url; // Full URL from DB
-                                    const fileName = cert.file_name || 'Certificate';
-
                                     // Console the file_url for debugging
                                     console.log('Certificate file_url:', fileUrl);
 
