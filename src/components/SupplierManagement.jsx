@@ -3046,10 +3046,6 @@ const UnitModal = ({ unit, onClose }) => {
                                                             <a href={getFileUrl(cert.file_url)} target="_blank" rel="noopener noreferrer">
                                                                 View
                                                             </a>
-                                                            <a href={getFileUrl(cert.file_url)} download={fileName}>
-                                                                Download
-                                                            </a>
-
                                                         </div>
                                                     </div>
                                                 )}
