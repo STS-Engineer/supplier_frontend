@@ -2807,18 +2807,6 @@ const UnitModal = ({ unit, onClose }) => {
         return `https://supplier-back.azurewebsites.net${fileUrl}`;
     };
 
-    // Helper function to get file type icon
-    const getFileIcon = (fileName) => {
-        if (!fileName) return 'fas fa-file';
-        const ext = fileName.split('.').pop().toLowerCase();
-        if (ext === 'pdf') return 'fas fa-file-pdf';
-        if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'].includes(ext)) return 'fas fa-file-image';
-        if (['doc', 'docx'].includes(ext)) return 'fas fa-file-word';
-        if (['xls', 'xlsx'].includes(ext)) return 'fas fa-file-excel';
-        if (['zip', 'rar', '7z'].includes(ext)) return 'fas fa-file-archive';
-        return 'fas fa-file';
-    };
-
     // Helper function to get file name
     const getFileName = (filePath) => {
         if (!filePath) return 'Certificate';
