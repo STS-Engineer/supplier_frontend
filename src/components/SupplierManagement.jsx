@@ -1,10 +1,7 @@
-// SupplierManagement.jsx
 import React, { useState, useEffect } from 'react';
-import { toast} from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css'
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './SupplierManagement.css';
-
-
 
 // ==================== END PDF VIEWER ====================
 
@@ -125,6 +122,7 @@ const SupplierManagement = () => {
             });
         }
     }, [isCompleteCustomerModalOpen, completeCustomerData, editingCustomer]);
+
     // Add these functions after handleResponsibleChange:
     const handleCertificateChange = (unitIndex, certIndex, field, value, file = null) => {
         console.log('Certificate change:', unitIndex, certIndex, field, value, file);
@@ -205,6 +203,7 @@ const SupplierManagement = () => {
             return updated;
         });
     };
+
     const openCompleteCustomerModal = () => {
         setEditingCustomer(null);
         setCompleteCustomerData({
@@ -1159,8 +1158,8 @@ const SupplierManagement = () => {
                 {filteredCustomers.length === 0 && (
                     <div className="empty-state">
                         <i className="fas fa-inbox"></i>
-                        <h3>No Suupliers Found</h3>
-                        <p>No Suupliers match your search criteria.</p>
+                        <h3>No Suppliers Found</h3>
+                        <p>No Suppliers match your search criteria.</p>
                         <button className="btn-primary" onClick={openCompleteCustomerModal}>
                             <i className="fas fa-user-plus"></i>
                             Add Your First Supplier
@@ -1218,7 +1217,6 @@ const SupplierManagement = () => {
     );
 };
 
-// Complete Customer Modal Component
 // Complete Customer Modal Component
 const CompleteCustomerModal = ({
     data,
@@ -2093,10 +2091,10 @@ const CompleteCustomerModal = ({
                                 </div>
 
                                 <div className="form-row">
-                                    {/* ===== MAIN PLANTS (MULTI SELECT) ===== */}
-                                    {/* ===== MAIN PLANTS (MULTI SELECT) ===== */}
+                                    {/* ===== Plants to deliver (MULTI SELECT) ===== */}
+                                    {/* ===== Plants to deliver (MULTI SELECT) ===== */}
                                     <div className="form-group">
-                                        <label className="form-label">Plant to be delivered</label>
+                                        <label className="form-label">Plants to deliver</label>
 
                                         <div className="multi-select">
                                             <div
@@ -2106,7 +2104,7 @@ const CompleteCustomerModal = ({
                                                 <span className="multi-select-value">
                                                     {Array.isArray(unit.mainplants) && unit.mainplants.length > 0
                                                         ? unit.mainplants.join(", ")
-                                                        : "Select main plants"}
+                                                        : "Select Plants to deliver"}
                                                 </span>
                                                 <span className="arrow">▾</span>
                                             </div>
@@ -2640,44 +2638,158 @@ const DeleteModal = ({ group, onConfirm, onClose }) => {
     );
 };
 
-// Unit Item Component
-const UnitItem = ({ unit, onClick }) => (
-    <div className="unit-item" onClick={onClick}>
-        <div className="unit-info">
-            <div className="unit-name">
-                <i className="fas fa-factory"></i>
-                {unit.unit_name}
-                {/* ADD THIS: Certificate count badge */}
-                {unit.certificates && unit.certificates.length > 0 && (
-                    <span className="certificate-count-badge">
-                        <i className="fas fa-certificate"></i>
-                        {unit.certificates.length}
-                    </span>
-                )}
-            </div>
-            <div className="unit-details">
-                {unit.city && (
-                    <span className="unit-location">
-                        <i className="fas fa-map-marker-alt"></i>
-                        {unit.city}
-                        {unit.country && `, ${unit.country}`}
-                    </span>
-                )}
-                {unit.zone_name && (
-                    <span className="unit-zone">
-                        <i className="fas fa-map"></i>
-                        {unit.zone_name}
-                    </span>
-                )}
-            </div>
-        </div>
-        <div className="unit-arrow">
-            <i className="fas fa-chevron-right"></i>
-        </div>
-    </div>
-);
+// Unit Item Component with View Button and Plants to deliver Tree
+const UnitItem = ({ unit, onClick }) => {
+    const [showPlants, setShowPlants] = useState(false);
+    
+    // Helper function to get mainplants array
+    const getMainPlantsArray = () => {
+        if (!unit.mainplants) return [];
+        
+        // Handle different formats: string, array, or comma-separated string
+        if (Array.isArray(unit.mainplants)) {
+            return unit.mainplants;
+        } else if (typeof unit.mainplants === 'string') {
+            // Split by comma and clean up
+            return unit.mainplants.split(',')
+                .map(plant => plant.trim())
+                .filter(plant => plant !== '');
+        }
+        
+        return [];
+    };
+    
+    const mainPlantsArray = getMainPlantsArray();
+    const hasMainPlants = mainPlantsArray.length > 0;
+    
+    const handleUnitClick = (e) => {
+        // Prevent triggering both unit click and button click
+        if (!e.target.closest('.unit-view-btn')) {
+            setShowPlants(!showPlants);
+        }
+    };
 
-// Unit Modal Component
+    const handleViewClick = (e) => {
+        e.stopPropagation();
+        onClick();
+    };
+
+    return (
+        <div className="unit-item-container">
+            <div className={`unit-item ${showPlants ? 'expanded' : ''}`} onClick={handleUnitClick}>
+                <div className="unit-info">
+                    <div className="unit-name">
+                        <i className="fas fa-factory"></i>
+                        {unit.unit_name}
+                        {unit.certificates && unit.certificates.length > 0 && (
+                            <span className="certificate-count-badge">
+                                <i className="fas fa-certificate"></i>
+                                {unit.certificates.length}
+                            </span>
+                        )}
+                        {/* Plants to deliver badge */}
+                        {hasMainPlants && (
+                            <span className="mainplants-count-badge">
+                                <i className="fas fa-industry"></i>
+                                {mainPlantsArray.length}
+                            </span>
+                        )}
+                    </div>
+                    <div className="unit-details">
+                        {unit.city && (
+                            <span className="unit-location">
+                                <i className="fas fa-map-marker-alt"></i>
+                                {unit.city}
+                                {unit.country && `, ${unit.country}`}
+                            </span>
+                        )}
+                        {unit.zone_name && (
+                            <span className="unit-zone">
+                                <i className="fas fa-map"></i>
+                                {unit.zone_name}
+                            </span>
+                        )}
+                        {/* Show first plant as preview */}
+                        {hasMainPlants && !showPlants && (
+                            <span className="unit-plants-preview">
+                                <i className="fas fa-industry"></i>
+                                {mainPlantsArray.slice(0, 2).join(', ')}
+                                {mainPlantsArray.length > 2 && ` +${mainPlantsArray.length - 2}`}
+                            </span>
+                        )}
+                    </div>
+                </div>
+                <div className="unit-actions">
+                    <button 
+                        className="unit-view-btn"
+                        onClick={handleViewClick}
+                        title="View Unit Details"
+                    >
+                        <i className="fas fa-eye"></i>
+                    </button>
+                    <div className="unit-arrow">
+                        <i className={`fas fa-chevron-${showPlants ? 'down' : 'right'}`}></i>
+                    </div>
+                </div>
+            </div>
+            
+            {/* Plants to deliver Tree Structure */}
+            {showPlants && hasMainPlants && (
+                <div className="plants-tree-container">
+                    <div className="plants-tree">
+                        <div className="tree-header">
+                            <i className="fas fa-industry"></i>
+                            <h5>Plants to deliver</h5>
+                            <span className="plants-count">{mainPlantsArray.length} plant(s)</span>
+                        </div>
+                        <div className="tree-branches">
+                            <div className="tree-trunk"></div>
+                            <div className="tree-leaves">
+                                {mainPlantsArray.map((plant, index) => (
+                                    <div key={`${unit.unit_id}-${index}`} className="tree-leaf">
+                                        <div className="leaf-dot">
+                                            <i className="fas fa-industry"></i>
+                                        </div>
+                                        <div className="leaf-text">
+                                            <span className="plant-name">{plant}</span>
+                                            {/* Add plant type based on name if needed */}
+                                            {plant.includes('Sceet') && <span className="plant-type">(Manufacturing)</span>}
+                                            {plant.includes('Kunshan') && <span className="plant-type">(Production)</span>}
+                                            {plant.includes('Monterrey') && <span className="plant-type">(Assembly)</span>}
+                                        </div>
+                                        <div className="leaf-connector"></div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        {/* Plants Summary */}
+                        <div className="plants-summary">
+                            <div className="summary-item">
+                                <i className="fas fa-map-pin"></i>
+                                <span>Total Plants: {mainPlantsArray.length}</span>
+                            </div>
+                            {mainPlantsArray.includes('Sceet') && (
+                                <div className="summary-item">
+                                    <i className="fas fa-cogs"></i>
+                                    <span>Includes Sceet Plant</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+            
+            {showPlants && !hasMainPlants && (
+                <div className="no-plants-message">
+                    <i className="fas fa-industry"></i>
+                    <span>No Plants to deliver configured</span>
+                </div>
+            )}
+        </div>
+    );
+};
+
 // Unit Modal Component
 const UnitModal = ({ unit, onClose }) => {
     if (!unit) return null;
@@ -2696,7 +2808,16 @@ const UnitModal = ({ unit, onClose }) => {
     };
 
     // Helper function to get file type icon
-   
+    const getFileIcon = (fileName) => {
+        if (!fileName) return 'fas fa-file';
+        const ext = fileName.split('.').pop().toLowerCase();
+        if (ext === 'pdf') return 'fas fa-file-pdf';
+        if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'].includes(ext)) return 'fas fa-file-image';
+        if (['doc', 'docx'].includes(ext)) return 'fas fa-file-word';
+        if (['xls', 'xlsx'].includes(ext)) return 'fas fa-file-excel';
+        if (['zip', 'rar', '7z'].includes(ext)) return 'fas fa-file-archive';
+        return 'fas fa-file';
+    };
 
     // Helper function to get file name
     const getFileName = (filePath) => {
@@ -2820,12 +2941,12 @@ const UnitModal = ({ unit, onClose }) => {
                             <i className="fas fa-info-circle"></i> Additional Information
                         </h3>
                         <div className="detail-grid">
-                            <DetailItem label="Plant to be delivered" value={unit.mainplants} />
+                            <DetailItem label="Plants to deliver" value={unit.mainplants} />
                             <DetailItem label="Plant" value={unit.plant} />
                             <DetailItem label="TOP" value={unit.top} />
                             <DetailItem label="Status" value={unit.status} />
                             <DetailItem label="Category" value={unit.category} />
-                            <DetailItem label="Responsible" value={unit.responsible_text} />
+                            <DetailItem label="Responsible (Text)" value={unit.responsible_text} />
 
                             {/* Document File */}
                             {unit.document_file && (
@@ -2886,7 +3007,6 @@ const UnitModal = ({ unit, onClose }) => {
                         </div>
                     )}
 
-                    {/* ==================== CERTIFICATES SECTION ==================== */}
                     {/* ==================== CERTIFICATES SECTION ==================== */}
                     {unit.certificates && unit.certificates.length > 0 && (
                         <div className="detail-section">
