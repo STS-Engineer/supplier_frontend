@@ -3293,6 +3293,463 @@
         0 0 0 1px rgba(255, 255, 255, 0.1) inset;
 }
 
+/* ==================== UNIT ITEM ENHANCEMENTS ==================== */
+
+.unit-item-container {
+  margin-bottom: 8px;
+}
+
+.unit-item {
+  padding: 15px 25px;
+  border-bottom: 1px solid var(--light-gray);
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: white;
+  border-radius: 12px;
+  margin-bottom: 4px;
+}
+
+.unit-item:hover {
+  background: linear-gradient(135deg, #f8f9ff, #e9ecef);
+  padding-left: 28px;
+}
+
+.unit-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.unit-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.unit-view-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.unit-view-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+}
+
+.unit-view-btn i {
+  font-size: 14px;
+}
+
+.unit-arrow {
+  color: var(--gray-color);
+  transition: var(--transition);
+  padding: 6px;
+  border-radius: 50%;
+  background: var(--light-gray);
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unit-item:hover .unit-arrow {
+  transform: translateX(5px);
+  color: var(--primary-color);
+  background: rgba(67, 97, 238, 0.1);
+}
+
+/* ==================== MAIN PLANTS BADGES & STYLES ==================== */
+
+.mainplants-count-badge {
+  background: #2196F3;
+  color: white;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.mainplants-count-badge i {
+  font-size: 10px;
+}
+
+.unit-plants-preview {
+  font-size: 12px;
+  color: #2196F3;
+  background: #e3f2fd;
+  padding: 4px 8px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  border: 1px solid #bbdefb;
+}
+
+.unit-plants-preview i {
+  font-size: 10px;
+}
+
+.plants-count {
+  background: #e8f5e8;
+  color: #2e7d32;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-left: auto;
+}
+
+/* ==================== PLANTS TREE STRUCTURE ==================== */
+
+.plants-tree-container {
+  margin: 10px 25px 15px;
+  padding: 0 0 15px 20px;
+  border-left: 2px solid #e0e0e0;
+  position: relative;
+}
+
+.plants-tree {
+  position: relative;
+}
+
+.tree-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-left: 10px;
+  padding: 15px;
+  background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+  border-radius: 12px;
+  border-left: 4px solid #2196F3;
+}
+
+.tree-header i {
+  color: #2196F3;
+  font-size: 20px;
+}
+
+.tree-header h5 {
+  margin: 0;
+  color: #1565c0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.tree-branches {
+  position: relative;
+  padding-left: 15px;
+}
+
+.tree-trunk {
+  position: absolute;
+  left: -2px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, #2196F3, #1976D2);
+  z-index: 1;
+}
+
+.tree-leaves {
+  position: relative;
+  z-index: 2;
+}
+
+.tree-leaf {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  position: relative;
+  animation: leafAppear 0.5s ease-out;
+  animation-fill-mode: both;
+}
+
+.tree-leaf:nth-child(1) { animation-delay: 0.1s; }
+.tree-leaf:nth-child(2) { animation-delay: 0.2s; }
+.tree-leaf:nth-child(3) { animation-delay: 0.3s; }
+.tree-leaf:nth-child(4) { animation-delay: 0.4s; }
+.tree-leaf:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes leafAppear {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Enhanced leaf dot for factories */
+.leaf-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2196F3, #1976D2);
+  margin-right: 15px;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.leaf-dot i {
+  color: white;
+  font-size: 12px;
+}
+
+.leaf-text {
+  padding: 10px 16px;
+  background: #e3f2fd;
+  border-radius: 12px;
+  font-size: 14px;
+  color: #1565c0;
+  font-weight: 500;
+  border: 1px solid #bbdefb;
+  flex: 1;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.leaf-text:hover {
+  background: #bbdefb;
+  transform: translateX(8px);
+  box-shadow: 0 6px 12px rgba(33, 150, 243, 0.2);
+}
+
+.plant-name {
+  font-weight: 600;
+}
+
+.plant-type {
+  font-size: 11px;
+  color: #5c6bc0;
+  background: #e8eaf6;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+.leaf-connector {
+  position: absolute;
+  left: -17px;
+  top: 50%;
+  width: 17px;
+  height: 1px;
+  background: #8BC34A;
+}
+
+/* Different connector styles based on position */
+.tree-leaf:first-child .leaf-connector {
+  background: linear-gradient(to right, #FF9800, #FF5722);
+  height: 2px;
+}
+
+.tree-leaf:nth-child(2) .leaf-connector {
+  background: linear-gradient(to right, #4CAF50, #8BC34A);
+  height: 2px;
+}
+
+.tree-leaf:nth-child(3) .leaf-connector {
+  background: linear-gradient(to right, #2196F3, #03A9F4);
+  height: 2px;
+}
+
+/* Plants Summary */
+.plants-summary {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f5f5f5;
+  border-radius: 10px;
+  border-left: 4px solid #2196F3;
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #424242;
+  padding: 6px 12px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+}
+
+.summary-item i {
+  color: #2196F3;
+}
+
+.no-plants-message {
+  margin: 10px 25px 15px;
+  padding: 10px 20px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #757575;
+  font-size: 13px;
+  border-left: 3px solid #e0e0e0;
+}
+
+.no-plants-message i {
+  color: #9e9e9e;
+}
+
+/* ==================== ENHANCED ANIMATIONS ==================== */
+
+.unit-item {
+  animation: slideInUnit 0.3s ease-out;
+}
+
+@keyframes slideInUnit {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.unit-item.expanded {
+  background: linear-gradient(135deg, #f0f4ff, #e6f7ff);
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+}
+
+.plants-tree-container {
+  animation: expandTree 0.4s ease-out;
+}
+
+@keyframes expandTree {
+  from {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    max-height: 500px;
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Animation for plant expansion */
+@keyframes plantExpand {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px) scale(0.8);
+  }
+  70% {
+    transform: translateX(5px) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.tree-leaf {
+  animation: plantExpand 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Different delays for each plant */
+.tree-leaf:nth-child(1) { animation-delay: 0.1s; }
+.tree-leaf:nth-child(2) { animation-delay: 0.2s; }
+.tree-leaf:nth-child(3) { animation-delay: 0.3s; }
+.tree-leaf:nth-child(4) { animation-delay: 0.4s; }
+.tree-leaf:nth-child(5) { animation-delay: 0.5s; }
+.tree-leaf:nth-child(6) { animation-delay: 0.6s; }
+
+/* ==================== RESPONSIVE ADJUSTMENTS ==================== */
+
+@media (max-width: 768px) {
+  .unit-item {
+    padding: 12px 15px;
+  }
+  
+  .plants-tree-container {
+    margin: 8px 15px 12px;
+    padding-left: 15px;
+  }
+  
+  .unit-view-btn {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .unit-arrow {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .tree-header {
+    padding: 12px;
+  }
+  
+  .leaf-text {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+}
+
+/* ==================== INTERACTIVE STATES ==================== */
+
+.tree-leaf:hover .leaf-dot {
+  transform: scale(1.3);
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.3);
+}
+
+.tree-leaf:hover .leaf-connector {
+  background: #FF9800;
+  height: 2px;
+}
+
+/* Tree growth animation */
+.tree-branches {
+  animation: treeGrow 0.8s ease-out;
+}
+
+@keyframes treeGrow {
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
 
 
 /* Responsive Design */
