@@ -2769,12 +2769,7 @@ const UnitItem = ({ unit, onClick }) => {
                                 <i className="fas fa-map-pin"></i>
                                 <span>Total Plants: {mainPlantsArray.length}</span>
                             </div>
-                            {mainPlantsArray.includes('Sceet') && (
-                                <div className="summary-item">
-                                    <i className="fas fa-cogs"></i>
-                                    <span>Includes Sceet Plant</span>
-                                </div>
-                            )}
+                      
                         </div>
                     </div>
                 </div>
