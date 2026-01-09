@@ -3,7 +3,157 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './SupplierManagement.css';
 
-// ==================== END PDF VIEWER ====================
+
+// Add this PlantTree component after the PlantModal component
+const PlantTree = ({ plant, onClose }) => {
+    if (!plant) return null;
+
+    const getFileUrl = (filePath) => {
+        if (!filePath) return null;
+        if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
+            return filePath;
+        }
+        return `http://localhost:5000${filePath}`;
+    };
+
+    const getPlantType = (plantName) => {
+        const plantNameLower = plantName?.toLowerCase() || '';
+        if (plantNameLower.includes('sceet') || plantNameLower.includes('same') ||
+            plantNameLower.includes('anhui') || plantNameLower.includes('india') ||
+            plantNameLower.includes('korea')) {
+            return 'Manufacturing';
+        } else if (plantNameLower.includes('monterrey')) {
+            return 'Assembly';
+        } else if (plantNameLower.includes('kunshan') || plantNameLower.includes('tianjin')) {
+            return 'Production';
+        } else if (plantNameLower.includes('poitiers')) {
+            return 'R&D';
+        } else if (plantNameLower.includes('cyclam')) {
+            return 'Development';
+        } else if (plantNameLower.includes('frankfurt')) {
+            return 'Sales';
+        } else {
+            return 'Manufacturing';
+        }
+    };
+
+    const formatPlantName = (plantName) => {
+        if (!plantName) return '';
+        return plantName.charAt(0).toUpperCase() + plantName.slice(1);
+    };
+
+    const plantType = getPlantType(plant.plant);
+    const formattedPlantName = formatPlantName(plant.plant);
+
+    return (
+        <div className="plant-tree-container">
+            {/* Tree structure */}
+            <div className="plant-tree">
+                {/* Level 1: Plant Name */}
+                <div className="tree-level tree-level-1">
+                    <div className="tree-node plant-tree-header">
+                        <div className="plant-tree-icon">
+                            <i className="fas fa-industry"></i>
+                        </div>
+                        <div className="plant-tree-title">
+                            <h3>{formattedPlantName} {plant.alias && `(${plant.alias})`}</h3>
+                            <div className="plant-tree-subtitle">
+                                <span className="plant-type">({plantType})</span>
+                                {plant.plant_id && <span style={{ marginLeft: '10px', color: '#a0aec0' }}>ID: {plant.plant_id}</span>}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Level 2: Plant Information (collapsible) */}
+                <div className="tree-level tree-level-2">
+                    <div className="tree-node plant-tree-body">
+                        <div className="plant-info-grid">
+                            <div className="plant-info-item">
+                                <div className="plant-info-label">
+                                    <i className="fas fa-user"></i>
+                                    Acheteur AVO
+                                </div>
+                                <div className="plant-info-value">
+                                    {plant.Acheteur_avo || 'Not specified'}
+                                </div>
+                            </div>
+
+                            <div className="plant-info-item">
+                                <div className="plant-info-label">
+                                    <i className="fas fa-file-invoice-dollar"></i>
+                                    TOP
+                                </div>
+                                <div className="plant-info-value">
+                                    {plant.top || 'Not specified'}
+                                </div>
+                            </div>
+
+                            <div className="plant-info-item">
+                                <div className="plant-info-label">
+                                    <i className="fas fa-truck"></i>
+                                    Incoterms
+                                </div>
+                                <div className="plant-info-value">
+                                    {plant.incoterms || 'Not specified'}
+                                </div>
+                            </div>
+
+                            <div className="plant-info-item">
+                                <div className="plant-info-label">
+                                    <i className="fas fa-map-marker-alt"></i>
+                                    Place of Incoterms
+                                </div>
+                                <div className="plant-info-value">
+                                    {plant.place_of_incoterms || 'Not specified'}
+                                </div>
+                            </div>
+
+                            <div className="plant-info-item">
+                                <div className="plant-info-label">
+                                    <i className="fas fa-info-circle"></i>
+                                    Status
+                                </div>
+                                <div className="plant-info-value">
+                                    <span className={`plant-status-badge ${plant.delivered ? 'status-delivered' : 'status-pending'}`}>
+                                        {plant.delivered ? 'Delivered' : 'Pending'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {plant.fichier_accord && (
+                            <div className="plant-file-preview">
+                                <h4>
+                                    <i className="fas fa-file-contract"></i>
+                                    Fichier d'Accord
+                                </h4>
+                                <div className="file-preview-actions">
+                                    <a href={getFileUrl(plant.fichier_accord)} target="_blank" rel="noopener noreferrer">
+                                        <i className="fas fa-eye"></i> View File
+                                    </a>
+                                    <a href={getFileUrl(plant.fichier_accord)} download>
+                                        <i className="fas fa-download"></i> Download
+                                    </a>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Level 3: Optional additional information (collapsed by default) */}
+                {plant.additionalInfo && (
+                    <div className="tree-level tree-level-3 collapsed">
+                        <div className="tree-node">
+                            <h4><i className="fas fa-info-circle"></i> Additional Information</h4>
+                            <p>{plant.additionalInfo}</p>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
 
 const SupplierManagement = () => {
     const [customers, setCustomers] = useState([]);
@@ -31,7 +181,8 @@ const SupplierManagement = () => {
     });
     const [formErrors, setFormErrors] = useState({});
     const [editingCustomer, setEditingCustomer] = useState(null);
-
+    const [selectedPlant, setSelectedPlant] = useState(null);
+    const [isPlantModalOpen, setIsPlantModalOpen] = useState(false);
     useEffect(() => {
         fetchCustomers();
     }, []);
@@ -54,24 +205,27 @@ const SupplierManagement = () => {
             if (!response.ok) throw new Error('Failed to fetch customers');
             const data = await response.json();
 
-            // For each customer, fetch certificates for their units
-            const customersWithCertificates = await Promise.all(
+            // For each customer, fetch certificates and plants for their units
+            const customersWithAllData = await Promise.all(
                 data.map(async (customer) => {
-                    // Fetch certificates for each unit in parallel
-                    const unitsWithCertificates = await Promise.all(
+                    const unitsWithAllData = await Promise.all(
                         customer.units.map(async (unit) => {
                             try {
+                                // Fetch certificates for this unit
                                 const certResponse = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/certificates/by-unit/${unit.unit_id}`);
-                                if (certResponse.ok) {
-                                    const certificates = await certResponse.json();
-                                    return {
-                                        ...unit,
-                                        certificates
-                                    };
-                                }
-                                return unit;
+                                const certificates = certResponse.ok ? await certResponse.json() : [];
+
+                                // Fetch plants for this unit
+                                const plantsResponse = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/plants/by-unit/${unit.unit_id}`);
+                                const plants = plantsResponse.ok ? await plantsResponse.json() : [];
+
+                                return {
+                                    ...unit,
+                                    certificates,
+                                    plants
+                                };
                             } catch (error) {
-                                console.error(`Error fetching certificates for unit ${unit.unit_id}:`, error);
+                                console.error(`Error fetching data for unit ${unit.unit_id}:`, error);
                                 return unit;
                             }
                         })
@@ -79,13 +233,13 @@ const SupplierManagement = () => {
 
                     return {
                         ...customer,
-                        units: unitsWithCertificates
+                        units: unitsWithAllData
                     };
                 })
             );
 
-            setCustomers(customersWithCertificates);
-            setFilteredCustomers(customersWithCertificates);
+            setCustomers(customersWithAllData);
+            setFilteredCustomers(customersWithAllData);
         } catch (err) {
             setError(err.message);
         } finally {
@@ -106,6 +260,13 @@ const SupplierManagement = () => {
                 unitData.certificates = certificates;
             }
 
+            // Fetch plants for this unit
+            const plantsResponse = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/plants/by-unit/${unitId}`);
+            if (plantsResponse.ok) {
+                const plants = await plantsResponse.json();
+                unitData.plants = plants;
+            }
+
             setSelectedUnit(unitData);
             setIsUnitModalOpen(true);
         } catch (err) {
@@ -116,28 +277,26 @@ const SupplierManagement = () => {
     // Debug: Log when modal opens with data
     useEffect(() => {
         if (isCompleteCustomerModalOpen && editingCustomer) {
-            console.log('🔍 Modal opened with certificates:');
+            console.log('🔍 Modal opened with plants:');
             completeCustomerData.units.forEach((unit, idx) => {
-                console.log(`Unit ${idx + 1}: ${unit.unit_name} - ${unit.certificates?.length || 0} certs`, unit.certificates);
+                console.log(`Unit ${idx + 1}: ${unit.unit_name} - ${unit.plants?.length || 0} plants`, unit.plants);
             });
         }
     }, [isCompleteCustomerModalOpen, completeCustomerData, editingCustomer]);
 
-    // Add these functions after handleResponsibleChange:
+    // Certificate Functions
     const handleCertificateChange = (unitIndex, certIndex, field, value, file = null) => {
         console.log('Certificate change:', unitIndex, certIndex, field, value, file);
 
         setCompleteCustomerData(prev => {
-            const updated = JSON.parse(JSON.stringify(prev)); // Deep clone
+            const updated = JSON.parse(JSON.stringify(prev));
 
-            // Ensure the unit and certificates array exist
             if (!updated.units[unitIndex]) return prev;
 
             if (!updated.units[unitIndex].certificates) {
                 updated.units[unitIndex].certificates = [];
             }
 
-            // Ensure the certificate exists at the specified index
             if (!updated.units[unitIndex].certificates[certIndex]) {
                 updated.units[unitIndex].certificates[certIndex] = {
                     Type: '',
@@ -149,7 +308,6 @@ const SupplierManagement = () => {
                 };
             }
 
-            // Update the specific field
             if (field === 'file') {
                 updated.units[unitIndex].certificates[certIndex].file = file;
                 updated.units[unitIndex].certificates[certIndex].file_name = file ? file.name : null;
@@ -165,19 +323,17 @@ const SupplierManagement = () => {
         console.log('addCertificate called for unit:', unitIndex);
 
         setCompleteCustomerData(prev => {
-            const updated = JSON.parse(JSON.stringify(prev)); // Deep clone
+            const updated = JSON.parse(JSON.stringify(prev));
 
             if (!updated.units[unitIndex]) {
                 console.error('Unit not found at index:', unitIndex);
                 return prev;
             }
 
-            // Initialize certificates array if it doesn't exist
             if (!updated.units[unitIndex].certificates) {
                 updated.units[unitIndex].certificates = [];
             }
 
-            // Add new certificate
             updated.units[unitIndex].certificates.push({
                 Type: '',
                 validity_date: '',
@@ -199,6 +355,82 @@ const SupplierManagement = () => {
             updated.units[unitIndex] = {
                 ...updated.units[unitIndex],
                 certificates: updated.units[unitIndex].certificates.filter((_, i) => i !== certIndex)
+            };
+            return updated;
+        });
+    };
+
+    // Plant Functions (Separate Table)
+    const handlePlantChange = (unitIndex, plantIndex, field, value, file = null) => {
+        setCompleteCustomerData(prev => {
+            const updated = JSON.parse(JSON.stringify(prev));
+
+            if (!updated.units[unitIndex]) return prev;
+
+            if (!updated.units[unitIndex].plants) {
+                updated.units[unitIndex].plants = [];
+            }
+
+            if (!updated.units[unitIndex].plants[plantIndex]) {
+                updated.units[unitIndex].plants[plantIndex] = {
+                    plant_id: null,
+                    plant: '',
+                    Acheteur_avo: '',
+                    alias: '',
+                    top: '',
+                    incoterms: '',
+                    place_of_incoterms: '',
+                    fichier_accord: null,
+                    fichier_accord_url: null
+                };
+            }
+
+            if (field === 'fichier_accord') {
+                updated.units[unitIndex].plants[plantIndex].fichier_accord = file;
+                updated.units[unitIndex].plants[plantIndex].file_name = file ? file.name : null;
+            } else {
+                const dbFieldName = field === 'place_of_incoterms' ? 'place_of_incoterms' : field;
+                updated.units[unitIndex].plants[plantIndex][dbFieldName] = value;
+            }
+
+            return updated;
+        });
+    };
+
+    const addPlant = (unitIndex) => {
+        setCompleteCustomerData(prev => {
+            const updated = JSON.parse(JSON.stringify(prev));
+
+            if (!updated.units[unitIndex]) {
+                return prev;
+            }
+
+            if (!updated.units[unitIndex].plants) {
+                updated.units[unitIndex].plants = [];
+            }
+
+            updated.units[unitIndex].plants.push({
+                plant_id: null,
+                plant: '',
+                Acheteur_avo: '',
+                alias: '',
+                top: '',
+                incoterms: '',
+                place_of_incoterms: '',
+                fichier_accord: null,
+                fichier_accord_url: null
+            });
+
+            return updated;
+        });
+    };
+
+    const removePlant = (unitIndex, plantIndex) => {
+        setCompleteCustomerData(prev => {
+            const updated = { ...prev };
+            updated.units[unitIndex] = {
+                ...updated.units[unitIndex],
+                plants: updated.units[unitIndex].plants.filter((_, i) => i !== plantIndex)
             };
             return updated;
         });
@@ -233,31 +465,25 @@ const SupplierManagement = () => {
 
             console.log('🔍 Opening edit modal for customer:', customer.supplier_name);
 
-            // Always fetch fresh data from the complete endpoint
+            // Fetch complete customer data
             const response = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/groups/${customer.supplier_id}/complete`);
             if (!response.ok) throw new Error('Failed to fetch customer details');
 
             const customerData = await response.json();
-            console.log('🔍 Complete customer data from backend:', {
-                units: customerData.units?.length,
-                firstUnit: customerData.units?.[0],
-                certificatesInFirstUnit: customerData.units?.[0]?.certificates,
-                mainplantsRaw: customerData.units?.[0]?.mainplants,
-                plant: customerData.units?.[0]?.plant,
-                top: customerData.units?.[0]?.top,
-                status: customerData.units?.[0]?.status,
-                category: customerData.units?.[0]?.category
-            });
 
-            setEditingCustomer(customerData);
+            // Fetch plants for each unit
+            const unitsWithPlants = await Promise.all((customerData.units || []).map(async (unit) => {
+                let unitPlants = [];
+                try {
+                    const plantsResponse = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/plants/by-unit/${unit.unit_id}`);
+                    if (plantsResponse.ok) {
+                        unitPlants = await plantsResponse.json();
+                    }
+                } catch (error) {
+                    console.error(`Error fetching plants for unit ${unit.unit_id}:`, error);
+                }
 
-            // Prepare the data to set
-            const newCompleteCustomerData = {
-                group: {
-                    supplier_name: customerData.supplier_name,
-                    description: customerData.description || ''
-                },
-                units: (customerData.units || []).map(unit => ({
+                return {
                     // Basic Information
                     unit_id: unit.unit_id,
                     unit_name: unit.unit_name || '',
@@ -267,23 +493,11 @@ const SupplierManagement = () => {
                     zone_name: unit.zone_name || '',
                     document_file: unit.document_file || null,
 
-                    // FIX: Handle mainplants properly - it could be string or array
-                    mainplants: unit.mainplants ?
-                        (Array.isArray(unit.mainplants) ?
-                            unit.mainplants :
-                            (typeof unit.mainplants === 'string' ?
-                                unit.mainplants.split(',').map(item => item.trim()).filter(item => item !== '') :
-                                []
-                            )
-                        ) : [],
-
-                    _openMainPlants: false, // initialize dropdown state
-
                     plant: unit.plant || '',
                     top: unit.top || '',
                     status: unit.status || '',
                     category: unit.category || '',
-                    responsible_text: unit.responsible || '', // Text field
+                    responsible_text: unit.responsible || '',
 
                     // Account Information
                     account_name: unit.account_name || '',
@@ -354,40 +568,58 @@ const SupplierManagement = () => {
                         zone_name: ''
                     },
 
-                    // Certificates
-                    certificates: (unit.certificates || []).map(cert => {
-                        console.log('📋 Certificate data:', cert);
-                        // Get file URL - handle both direct URLs and relative paths
+                    // Plants from separate table
+                    plants: unitPlants.map(plant => {
                         let file_url = null;
-                        if (cert.file) {
-                            if (cert.file.startsWith('http')) {
-                                file_url = cert.file;
-                            } else if (cert.file.startsWith('/uploads')) {
-                                file_url = `https://supplier-back.azurewebsites.net${cert.file}`;
+                        if (plant.fichier_accord) {
+                            if (plant.fichier_accord.startsWith('http')) {
+                                file_url = plant.fichier_accord;
+                            } else if (plant.fichier_accord.startsWith('/uploads')) {
+                                file_url = `http://localhost:5000${plant.fichier_accord}`;
                             }
                         }
+
                         return {
-                            certificat_id: cert.certificat_id || null,
-                            Type: cert.Type || '',
-                            validity_date: cert.validity_date || '',
-                            custom_type: cert.custom_type || '',
-                            file: null, // Don't store File object, just track it separately
-                            file_url: file_url || cert.file_url || null,
-                            file_name: cert.file ? cert.file.split('/').pop() : null
+                            plant_id: plant.plant_id || null,
+                            plant: plant.plant || '',
+                            Acheteur_avo: plant.Acheteur_avo || '',
+                            alias: plant.alias || '',
+                            top: plant.top || '',
+                            incoterms: plant.incoterms || '',
+                            place_of_incoterms: plant.place_of_incoterms || '',
+                            fichier_accord: null,
+                            fichier_accord_url: file_url || null,
+                            file_name: plant.fichier_accord ? plant.fichier_accord.split('/').pop() : null
                         };
-                    })
-                }))
+                    }),
+
+                    // Certificates
+                    certificates: (unit.certificates || []).map(cert => ({
+                        certificat_id: cert.certificat_id || null,
+                        Type: cert.Type || '',
+                        validity_date: cert.validity_date || '',
+                        custom_type: cert.custom_type || '',
+                        file: null,
+                        file_url: cert.file ? (cert.file.startsWith('http') ? cert.file : `http://localhost:5000${cert.file}`) : cert.file_url || null,
+                        file_name: cert.file ? cert.file.split('/').pop() : null
+                    }))
+                };
+            }));
+
+            setEditingCustomer(customerData);
+
+            // Prepare the data to set
+            const newCompleteCustomerData = {
+                group: {
+                    supplier_name: customerData.supplier_name,
+                    description: customerData.description || ''
+                },
+                units: unitsWithPlants
             };
 
             console.log('✅ CompleteCustomerData after mapping:', {
                 units: newCompleteCustomerData.units?.length,
-                firstUnitName: newCompleteCustomerData.units?.[0]?.unit_name,
-                mainplants: newCompleteCustomerData.units?.[0]?.mainplants,
-                plant: newCompleteCustomerData.units?.[0]?.plant,
-                top: newCompleteCustomerData.units?.[0]?.top,
-                status: newCompleteCustomerData.units?.[0]?.status,
-                category: newCompleteCustomerData.units?.[0]?.category,
-                certificatesCount: newCompleteCustomerData.units?.[0]?.certificates?.length
+                plantsInFirstUnit: newCompleteCustomerData.units?.[0]?.plants?.length
             });
 
             // Set the state
@@ -469,6 +701,20 @@ const SupplierManagement = () => {
         });
     };
 
+
+
+    // Function to handle plant click
+    // Function to handle plant click - show tree structure
+    const handlePlantClick = (plant) => {
+        setSelectedPlant(plant);
+        setIsPlantModalOpen(true); // Still using the same modal state
+    };
+
+    // Function to close plant modal
+    const closePlantModal = () => {
+        setIsPlantModalOpen(false);
+        setSelectedPlant(null);
+    };
     const addUnit = () => {
         setCompleteCustomerData(prev => ({
             ...prev,
@@ -480,13 +726,12 @@ const SupplierManagement = () => {
                     country: '',
                     zone_name: '',
                     document_file: null,
-                    mainplants: [],
-                    _openMainPlants: false,
                     plant: '',
                     top: '',
                     status: '',
                     category: '',
-                    responsible_text: '', // ADD THIS LINE
+                    responsible_text: '',
+
                     // Account Information
                     account_name: '',
                     parent_account: '',
@@ -504,12 +749,14 @@ const SupplierManagement = () => {
                     billing_account_number: '',
                     product_family: '',
                     account_currency: '',
+
                     // Company Information
                     start_year: '',
                     solvent_customer: '',
                     solvency_info: '',
                     budget_avo_carbon: '',
                     avo_carbon_potential_buisness: '',
+
                     // Address Information
                     billing_address_search: '',
                     billing_street: '',
@@ -524,6 +771,7 @@ const SupplierManagement = () => {
                     shipping_zip: '',
                     shipping_country: '',
                     copy_billing: false,
+
                     // Agreements
                     confidentiality_agreement: false,
                     quality_agreement: false,
@@ -531,6 +779,7 @@ const SupplierManagement = () => {
                     logistics_agreement: false,
                     payment_conditions: '',
                     tech_key_account: '',
+
                     // Responsible Person
                     responsible: {
                         Person_id: null,
@@ -542,6 +791,22 @@ const SupplierManagement = () => {
                         role: 'Contact',
                         zone_name: ''
                     },
+
+                    // Plants from separate table
+                    plants: [
+                        {
+                            plant_id: null,
+                            plant: '',
+                            Acheteur_avo: '',
+                            alias: '',
+                            top: '',
+                            incoterms: '',
+                            place_of_incoterms: '',
+                            fichier_accord: null,
+                            fichier_accord_url: null
+                        }
+                    ],
+
                     certificates: []
                 }
             ]
@@ -591,6 +856,13 @@ const SupplierManagement = () => {
                     errors[`cert_${unitIndex}_${certIndex}_date`] = `Unit ${unitIndex + 1}, Certificate ${certIndex + 1} validity date is required`;
                 }
             });
+
+            // Check plants - with null safety
+            unit.plants?.forEach((plant, plantIndex) => {
+                if (!plant?.plant?.trim()) {
+                    errors[`plant_${unitIndex}_${plantIndex}_name`] = `Unit ${unitIndex + 1}, Plant ${plantIndex + 1} name is required`;
+                }
+            });
         });
 
         setFormErrors(errors);
@@ -620,14 +892,209 @@ const SupplierManagement = () => {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Failed to save group');
             }
-            console.log('🔥 Toast launched: Group created/updated');
+
             toast.success(selectedGroup ? 'Customer updated successfully!' : 'Customer created successfully!');
             await fetchCustomers();
             closeModals();
 
         } catch (err) {
             setError(err.message);
+            toast.error(`Error: ${err.message}`);
+        }
+    };
 
+    // Helper function to handle plants data
+    const handleUnitPlants = async (unit, unitId) => {
+        try {
+            console.log('🌱 Handling plants for unit:', unit.unit_name, 'ID:', unitId);
+
+            // Get existing plants for this unit
+            const existingResponse = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/plants/by-unit/${unitId}`);
+            const existingPlants = existingResponse.ok ? await existingResponse.json() : [];
+
+            // Get current plant IDs from the form
+            const currentPlantIds = unit.plants
+                ? unit.plants.map(plant => plant.plant_id).filter(id => id)
+                : [];
+
+            // Find plants to delete (exist in DB but not in current form)
+            const plantsToDelete = existingPlants.filter(plant =>
+                !currentPlantIds.includes(plant.plant_id)
+            );
+
+            console.log('Plants to delete:', plantsToDelete.length);
+
+            // Delete plants that were removed
+            const deletePromises = plantsToDelete.map(async (plant) => {
+                console.log('Deleting plant:', plant.plant_id);
+                await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/plants/${plant.plant_id}`, {
+                    method: 'DELETE',
+                });
+            });
+
+            // Handle plant updates/creations
+            const updatePromises = (unit.plants || []).map(async (plant, index) => {
+                console.log(`📤 Processing plant ${index + 1}:`, {
+                    id: plant.plant_id,
+                    plant: plant.plant,
+                    hasFile: !!plant.fichier_accord,
+                    fileObject: plant.fichier_accord instanceof File
+                });
+
+                const formData = new FormData();
+                formData.append('unit_id', unitId.toString());
+                formData.append('plant', plant.plant || '');
+                formData.append('Acheteur_avo', plant.Acheteur_avo || '');
+                formData.append('alias', plant.alias || '');
+                formData.append('top', plant.top || '');
+                formData.append('incoterms', plant.incoterms || '');
+                formData.append('place_of_incoterms', plant.place_of_incoterms || '');
+
+                if (plant.fichier_accord && plant.fichier_accord instanceof File) {
+                    console.log('📤 Uploading fichier_accord:', plant.fichier_accord.name);
+                    formData.append('fichier_accord', plant.fichier_accord);
+                } else if (plant.fichier_accord_url && !plant.fichier_accord) {
+                    formData.append('keepExistingFile', 'true');
+                    console.log('🔗 Keeping existing fichier_accord:', plant.fichier_accord_url);
+                }
+
+                let response;
+                let url;
+
+                if (plant.plant_id) {
+                    // Update existing plant
+                    console.log(`🔄 Updating plant ${plant.plant_id}`);
+                    url = `https://supplier-back.azurewebsites.net/ajouter/api/plants/${plant.plant_id}`;
+                    response = await fetch(url, {
+                        method: 'PUT',
+                        body: formData,
+                    });
+                } else {
+                    // Create new plant
+                    console.log('➕ Creating new plant');
+                    url = 'https://supplier-back.azurewebsites.net/ajouter/api/plants';
+                    response = await fetch(url, {
+                        method: 'POST',
+                        body: formData,
+                    });
+                }
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Plant request failed:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        error: errorText,
+                        url: url
+                    });
+                    throw new Error(`Failed to ${plant.plant_id ? 'update' : 'create'} plant`);
+                }
+
+                const result = await response.json();
+                console.log('✅ Plant saved:', result);
+                return result;
+            });
+
+            // Wait for all operations to complete
+            await Promise.all([...deletePromises, ...updatePromises]);
+            console.log('✅ All plant operations completed');
+
+        } catch (error) {
+            console.error('❌ Error handling plants:', error);
+            throw error;
+        }
+    };
+
+    // Helper function to handle certificates data
+    const handleUnitCertificates = async (unit, unitId) => {
+        try {
+            console.log('📁 Handling certificates for unit:', unit.unit_name, 'ID:', unitId);
+
+            // First, get existing certificates for this unit
+            const existingCertsResponse = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/certificates/by-unit/${unitId}`);
+            const existingCertificates = existingCertsResponse.ok ? await existingCertsResponse.json() : [];
+
+            // Get current certificate IDs from the form
+            const currentCertIds = unit.certificates
+                ? unit.certificates.map(cert => cert.certificat_id).filter(id => id)
+                : [];
+
+            // Find certificates to delete (exist in DB but not in current form)
+            const certsToDelete = existingCertificates.filter(cert =>
+                !currentCertIds.includes(cert.certificat_id)
+            );
+
+            // Delete certificates that were removed
+            const deletePromises = certsToDelete.map(async (cert) => {
+                console.log('Deleting certificate:', cert.certificat_id);
+                await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/certificates/${cert.certificat_id}`, {
+                    method: 'DELETE',
+                });
+            });
+
+            // Handle certificate updates/creations
+            const updatePromises = (unit.certificates || []).map(async (cert, index) => {
+                const formData = new FormData();
+                formData.append('unit_id', unitId.toString());
+                formData.append('Type', cert.Type || cert.custom_type || '');
+                formData.append('Date', cert.validity_date || cert.Date || '');
+                formData.append('validity_date', cert.validity_date || cert.Date || '');
+
+                if (cert.custom_type) {
+                    formData.append('custom_type', cert.custom_type);
+                }
+
+                // Handle file upload
+                if (cert.file && cert.file instanceof File) {
+                    console.log('📤 Uploading file:', cert.file.name);
+                    formData.append('file', cert.file);
+                } else if (cert.file_url && !cert.file) {
+                    formData.append('keepExistingFile', 'true');
+                    console.log('🔗 Keeping existing file:', cert.file_url);
+                }
+
+                let response;
+                let url;
+
+                if (cert.certificat_id) {
+                    // Update existing certificate
+                    url = `https://supplier-back.azurewebsites.net/ajouter/api/certificates/${cert.certificat_id}`;
+                    response = await fetch(url, {
+                        method: 'PUT',
+                        body: formData,
+                    });
+                } else {
+                    // Create new certificate
+                    url = 'https://supplier-back.azurewebsites.net/ajouter/api/certificates';
+                    response = await fetch(url, {
+                        method: 'POST',
+                        body: formData,
+                    });
+                }
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Certificate request failed:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        error: errorText,
+                        url: url
+                    });
+                    throw new Error(`Failed to ${cert.certificat_id ? 'update' : 'create'} certificate`);
+                }
+
+                const result = await response.json();
+                console.log('✅ Certificate saved:', result);
+                return result;
+            });
+
+            // Wait for all operations to complete
+            await Promise.all([...deletePromises, ...updatePromises]);
+            console.log('✅ All certificate operations completed');
+
+        } catch (error) {
+            console.error('❌ Error handling certificates:', error);
+            throw error;
         }
     };
 
@@ -654,7 +1121,7 @@ const SupplierManagement = () => {
                     throw new Error(errorData.error || 'Failed to update group');
                 }
 
-                // 2. Update or create units with ALL FIELDS
+                // 2. Update or create units
                 const unitPromises = completeCustomerData.units.map(async (unit) => {
                     const unitData = {
                         supplier_id: editingCustomer.supplier_id,
@@ -664,7 +1131,6 @@ const SupplierManagement = () => {
                         com_person_id: unit.responsible?.Person_id || null,
                         zone_name: unit.zone_name || null,
                         document_file: unit.document_file || null,
-                        mainplants: unit.mainplants || null,
                         plant: unit.plant || null,
                         top: unit.top || null,
                         status: unit.status || null,
@@ -715,17 +1181,6 @@ const SupplierManagement = () => {
                         payment_conditions: unit.payment_conditions || null,
                         tech_key_account: unit.tech_key_account || null
                     };
-
-                    // Log data for debugging
-                    console.log('📤 Sending unit update data:', {
-                        unit_name: unit.unit_name,
-                        mainplants: unit.mainplants,
-                        responsible: unit.responsible_text || unit.responsible,
-                        plant: unit.plant,
-                        top: unit.top,
-                        status: unit.status,
-                        category: unit.category
-                    });
 
                     let savedUnit;
 
@@ -746,7 +1201,10 @@ const SupplierManagement = () => {
 
                         savedUnit = await unitResponse.json();
 
-                        // 3. Handle certificates for this unit
+                        // 3. Handle plants for this unit
+                        await handleUnitPlants(unit, savedUnit.unit_id);
+
+                        // 4. Handle certificates for this unit
                         await handleUnitCertificates(unit, savedUnit.unit_id);
                     } else {
                         // Create new unit
@@ -765,7 +1223,10 @@ const SupplierManagement = () => {
 
                         savedUnit = await unitResponse.json();
 
-                        // 3. Handle certificates for this unit
+                        // 3. Handle plants for this unit
+                        await handleUnitPlants(unit, savedUnit.unit_id);
+
+                        // 4. Handle certificates for this unit
                         await handleUnitCertificates(unit, savedUnit.unit_id);
                     }
 
@@ -774,11 +1235,7 @@ const SupplierManagement = () => {
 
                 // Wait for all units to be updated/created
                 await Promise.all(unitPromises);
-                toast.success('Customer updated successfully!', {
-                    position: "top-center",
-                    autoClose: 3000,
-                    toastClassName: "custom-toast-offset",
-                });
+                toast.success('Customer updated successfully!');
             } else {
                 // CREATE NEW CUSTOMER
                 // 1. First create the group
@@ -798,7 +1255,7 @@ const SupplierManagement = () => {
                 const groupData = await groupResponse.json();
                 const groupId = groupData.supplier_id;
 
-                // 2. Then create each unit for this group with ALL FIELDS
+                // 2. Then create each unit for this group
                 const unitPromises = completeCustomerData.units.map(async (unit) => {
                     const unitData = {
                         supplier_id: groupId,
@@ -808,7 +1265,6 @@ const SupplierManagement = () => {
                         com_person_id: unit.responsible?.Person_id || null,
                         zone_name: unit.zone_name || null,
                         document_file: unit.document_file || null,
-                        mainplants: unit.mainplants || null,
                         plant: unit.plant || null,
                         top: unit.top || null,
                         status: unit.status || null,
@@ -860,17 +1316,6 @@ const SupplierManagement = () => {
                         tech_key_account: unit.tech_key_account || null
                     };
 
-                    // Log data for debugging
-                    console.log('📤 Sending unit create data:', {
-                        unit_name: unit.unit_name,
-                        mainplants: unit.mainplants,
-                        responsible: unit.responsible_text || unit.responsible,
-                        plant: unit.plant,
-                        top: unit.top,
-                        status: unit.status,
-                        category: unit.category
-                    });
-
                     // Create new unit
                     const unitResponse = await fetch('https://supplier-back.azurewebsites.net/ajouter/api/units', {
                         method: 'POST',
@@ -887,7 +1332,10 @@ const SupplierManagement = () => {
 
                     const savedUnit = await unitResponse.json();
 
-                    // 3. Handle certificates for this unit
+                    // 3. Handle plants for this unit
+                    await handleUnitPlants(unit, savedUnit.unit_id);
+
+                    // 4. Handle certificates for this unit
                     await handleUnitCertificates(unit, savedUnit.unit_id);
 
                     return savedUnit;
@@ -896,11 +1344,7 @@ const SupplierManagement = () => {
                 // Wait for all units to be created
                 await Promise.all(unitPromises);
 
-                toast.success("Customer created successfully!", {
-                    position: "top-center",
-                    autoClose: 3000,
-                    toastClassName: "custom-toast-offset",
-                });
+                toast.success("Customer created successfully!");
             }
 
             // Refresh the customers list
@@ -916,138 +1360,6 @@ const SupplierManagement = () => {
         }
     };
 
-    // Add this helper function to handle certificates
-    const handleUnitCertificates = async (unit, unitId) => {
-        try {
-            console.log('📁 Handling certificates for unit:', unit.unit_name, 'ID:', unitId);
-            console.log('Certificates to process:', unit.certificates?.length || 0);
-
-            // First, get existing certificates for this unit
-            const existingCertsResponse = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/certificates/by-unit/${unitId}`);
-            const existingCertificates = existingCertsResponse.ok ? await existingCertsResponse.json() : [];
-
-            // Get current certificate IDs from the form
-            const currentCertIds = unit.certificates
-                ? unit.certificates.map(cert => cert.certificat_id).filter(id => id)
-                : [];
-
-            // Find certificates to delete (exist in DB but not in current form)
-            const certsToDelete = existingCertificates.filter(cert =>
-                !currentCertIds.includes(cert.certificat_id)
-            );
-
-            console.log('Certificates to delete:', certsToDelete.length);
-
-            // Delete certificates that were removed
-            const deletePromises = certsToDelete.map(async (cert) => {
-                console.log('Deleting certificate:', cert.certificat_id);
-                await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/certificates/${cert.certificat_id}`, {
-                    method: 'DELETE',
-                });
-            });
-
-            // Handle certificate updates/creations
-            const updatePromises = (unit.certificates || []).map(async (cert, index) => {
-                console.log(`📤 Processing certificate ${index + 1}:`, {
-                    id: cert.certificat_id,
-                    type: cert.Type,
-                    date: cert.validity_date,
-                    hasFile: !!cert.file,
-                    fileObject: cert.file instanceof File,
-                    fileUrl: cert.file_url
-                });
-
-                // Create FormData for file upload
-                const formData = new FormData();
-
-                // IMPORTANT: Append ALL required fields
-                formData.append('unit_id', unitId.toString());
-                formData.append('Type', cert.Type || cert.custom_type || '');
-
-                // Use 'Date' or 'validity_date' depending on backend expectation
-                // Try both if unsure
-                formData.append('Date', cert.validity_date || cert.Date || '');
-                formData.append('validity_date', cert.validity_date || cert.Date || '');
-
-                if (cert.custom_type) {
-                    formData.append('custom_type', cert.custom_type);
-                }
-
-                // Handle file upload
-                if (cert.file && cert.file instanceof File) {
-                    console.log('📤 Uploading file:', cert.file.name, 'size:', cert.file.size, 'type:', cert.file.type);
-                    formData.append('file', cert.file);
-                } else if (cert.file_url && !cert.file) {
-                    // If there's a file URL but no file object, keep existing file
-                    formData.append('keepExistingFile', 'true');
-                    console.log('🔗 Keeping existing file:', cert.file_url);
-                }
-
-                // Debug: Log FormData contents
-                console.log('📋 FormData contents:');
-                for (let [key, value] of formData.entries()) {
-                    console.log(`  ${key}:`, value instanceof File ? `File: ${value.name}` : value);
-                }
-
-                let response;
-                let url;
-
-                if (cert.certificat_id) {
-                    // Update existing certificate
-                    console.log(`🔄 Updating certificate ${cert.certificat_id}`);
-                    url = `https://supplier-back.azurewebsites.net/ajouter/api/certificates/${cert.certificat_id}`;
-                    response = await fetch(url, {
-                        method: 'PUT',
-                        body: formData,
-                        // DO NOT set Content-Type header for FormData
-                    });
-                } else {
-                    // Create new certificate
-                    console.log('➕ Creating new certificate');
-                    url = 'https://supplier-back.azurewebsites.net/ajouter/api/certificates';
-                    response = await fetch(url, {
-                        method: 'POST',
-                        body: formData,
-                        // DO NOT set Content-Type header for FormData
-                    });
-                }
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('❌ Certificate request failed:', {
-                        status: response.status,
-                        statusText: response.statusText,
-                        error: errorText,
-                        url: url
-                    });
-
-                    // Try to parse JSON error
-                    let errorMessage = `Failed to ${cert.certificat_id ? 'update' : 'create'} certificate`;
-                    try {
-                        const errorJson = JSON.parse(errorText);
-                        errorMessage = errorJson.error || errorMessage;
-                    } catch (e) {
-                        errorMessage = errorText || errorMessage;
-                    }
-
-                    throw new Error(`${errorMessage} for unit ${unit.unit_name}`);
-                }
-
-                const result = await response.json();
-                console.log('✅ Certificate saved:', result);
-                return result;
-            });
-
-            // Wait for all operations to complete
-            await Promise.all([...deletePromises, ...updatePromises]);
-            console.log('✅ All certificate operations completed');
-
-        } catch (error) {
-            console.error('❌ Error handling certificates:', error);
-            throw error;
-        }
-    };
-
     const handleDeleteGroup = async () => {
         if (!groupToDelete) return;
 
@@ -1060,18 +1372,14 @@ const SupplierManagement = () => {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Failed to delete group');
             }
-            console.log('🔥 Toast launched: Group created/updated');
-            toast.success('Supplier deleted successfully!', {
-                position: "top-center",
-                autoClose: 3000,
-                toastClassName: "custom-toast-offset",
-            });
+
+            toast.success('Supplier deleted successfully!');
             await fetchCustomers();
             closeModals();
 
         } catch (err) {
             setError(err.message);
-
+            toast.error(`Error: ${err.message}`);
         }
     };
 
@@ -1103,7 +1411,6 @@ const SupplierManagement = () => {
 
     return (
         <div className="customer-management">
-
             {/* Header */}
             <header className="app-header">
                 <div className="header-content">
@@ -1125,7 +1432,6 @@ const SupplierManagement = () => {
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
-
                             </div>
                         </div>
 
@@ -1151,6 +1457,7 @@ const SupplierManagement = () => {
                             onEditGroupClick={openEditGroupModal}
                             onEditCompleteClick={openEditCompleteCustomerModal}
                             onDeleteClick={openDeleteGroupModal}
+                            onPlantClick={handlePlantClick}  // Add this
                         />
                     ))}
                 </div>
@@ -1196,10 +1503,14 @@ const SupplierManagement = () => {
                     onSubmit={handleSubmitCompleteCustomer}
                     onClose={closeModals}
                     isEditing={!!editingCustomer}
-                    // MAKE SURE THESE ARE PASSED:
+                    // Certificate functions
                     onAddCertificate={addCertificate}
                     onRemoveCertificate={removeCertificate}
                     onCertificateChange={handleCertificateChange}
+                    // Plant functions (separate table)
+                    onAddPlant={addPlant}
+                    onRemovePlant={removePlant}
+                    onPlantChange={handlePlantChange}
                 />
             )}
 
@@ -1211,7 +1522,26 @@ const SupplierManagement = () => {
                     onClose={closeModals}
                 />
             )}
-
+            {/* Plant Modal */}
+            {/* Plant Modal - Now showing as Tree */}
+            {isPlantModalOpen && selectedPlant && (
+                <div className="modal-overlay" onClick={closePlantModal}>
+                    <div className="modal-content plant-tree-modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <div className="modal-title">
+                                <i className="fas fa-project-diagram"></i>
+                                <h2>Plant Tree Structure</h2>
+                            </div>
+                            <button className="modal-close" onClick={closePlantModal}>
+                                <i className="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <PlantTree plant={selectedPlant} />
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );
@@ -1229,18 +1559,22 @@ const CompleteCustomerModal = ({
     onSubmit,
     onClose,
     isEditing = false,
-    // ADD THESE PROPS:
+    // Certificate props
     onAddCertificate,
     onRemoveCertificate,
-    onCertificateChange  // Make sure this prop is passed from parent
+    onCertificateChange,
+    // Plant props (separate table)
+    onAddPlant,
+    onRemovePlant,
+    onPlantChange
 }) => {
     const [persons, setPersons] = useState([]);
     const [loadingPersons, setLoadingPersons] = useState(true);
+
     useEffect(() => {
         const fetchPersons = async () => {
             try {
                 setLoadingPersons(true);
-                // Use the new endpoint without domain filter
                 const response = await fetch('https://supplier-back.azurewebsites.net/ajouter/api/persons');
                 if (!response.ok) throw new Error('Failed to fetch persons');
                 const personsData = await response.json();
@@ -1257,11 +1591,9 @@ const CompleteCustomerModal = ({
     }, []);
 
     const handlePersonChange = (unitIndex, personId) => {
-        // Find the selected person from persons list
         const selectedPersonData = persons.find(person => person.Person_id === parseInt(personId));
 
         if (selectedPersonData) {
-            // Update all responsible person fields
             onResponsibleChange(unitIndex, 'Person_id', selectedPersonData.Person_id);
             onResponsibleChange(unitIndex, 'first_name', selectedPersonData.first_name);
             onResponsibleChange(unitIndex, 'last_name', selectedPersonData.last_name);
@@ -1271,7 +1603,6 @@ const CompleteCustomerModal = ({
             onResponsibleChange(unitIndex, 'role', selectedPersonData.role || 'Contact');
             onResponsibleChange(unitIndex, 'zone_name', selectedPersonData.zone_name || '');
         } else {
-            // Clear all fields if no person selected
             onResponsibleChange(unitIndex, 'Person_id', null);
             onResponsibleChange(unitIndex, 'first_name', '');
             onResponsibleChange(unitIndex, 'last_name', '');
@@ -1283,44 +1614,20 @@ const CompleteCustomerModal = ({
         }
     };
 
-
-    // ✅ ADD THIS DEBUGGING EFFECT HERE
     useEffect(() => {
         console.log('🔍 Modal data received:', data);
-        console.log('Total units:', data.units?.length || 0);
-
         data.units?.forEach((unit, idx) => {
             console.log(`Unit ${idx}: ${unit.unit_name || 'Unnamed'}`, {
+                hasPlants: !!unit.plants,
+                plantCount: unit.plants?.length || 0,
                 hasCertificates: !!unit.certificates,
-                certificateCount: unit.certificates?.length || 0,
-                certificates: unit.certificates || []
+                certificateCount: unit.certificates?.length || 0
             });
         });
-    }, [data]); // This will run whenever 'data' prop changes
+    }, [data]);
 
     const addFirstUnit = () => {
         onAddUnit();
-    };
-
-    useEffect(() => {
-        const handleClickOutside = (e) => {
-            // Close all mainplants dropdowns if clicked outside
-            const isMultiSelect = e.target.closest('.multi-select');
-            if (!isMultiSelect) {
-                data.units.forEach((_, index) => {
-                    if (data.units[index]?._openMainPlants) {
-                        onUnitChange(index, '_openMainPlants', false);
-                    }
-                });
-            }
-        };
-
-        document.addEventListener('click', handleClickOutside);
-        return () => document.removeEventListener('click', handleClickOutside);
-    }, [data.units, onUnitChange]);
-
-    const toggleMainPlantsDropdown = (unitIndex) => {
-        onUnitChange(unitIndex, '_openMainPlants', !data.units[unitIndex]?._openMainPlants);
     };
 
     return (
@@ -1352,7 +1659,7 @@ const CompleteCustomerModal = ({
                                 value={data.group.supplier_name}
                                 onChange={(e) => onGroupChange('group.supplier_name', e.target.value)}
                                 className={`form-input ${formErrors.group_name ? 'error' : ''}`}
-                                placeholder="Enter group name"
+                                placeholder="Enter supplier name"
                             />
                             {formErrors.group_name && (
                                 <span className="error-message">{formErrors.group_name}</span>
@@ -1368,7 +1675,7 @@ const CompleteCustomerModal = ({
                                 value={data.group.description}
                                 onChange={(e) => onGroupChange('group.description', e.target.value)}
                                 className="form-textarea"
-                                placeholder="Enter supplier description "
+                                placeholder="Enter supplier description"
                                 rows="3"
                             />
                         </div>
@@ -2052,7 +2359,6 @@ const CompleteCustomerModal = ({
                                     />
                                 </div>
 
-
                                 {/* Responsible Person Section */}
                                 <div className="section-subheader">
                                     <h5><i className="fas fa-user-tie"></i> Responsible Person</h5>
@@ -2084,73 +2390,12 @@ const CompleteCustomerModal = ({
                                     </select>
                                 </div>
 
-
                                 {/* Additional Information Section */}
                                 <div className="section-subheader">
                                     <h5><i className="fas fa-info-circle"></i> Additional Information</h5>
                                 </div>
 
                                 <div className="form-row">
-                                    {/* ===== Plants to deliver (MULTI SELECT) ===== */}
-                                    {/* ===== Plants to deliver (MULTI SELECT) ===== */}
-                                    <div className="form-group">
-                                        <label className="form-label">Plants to deliver</label>
-
-                                        <div className="multi-select">
-                                            <div
-                                                className="multi-select-control"
-                                                onClick={() => toggleMainPlantsDropdown(unitIndex)}
-                                            >
-                                                <span className="multi-select-value">
-                                                    {Array.isArray(unit.mainplants) && unit.mainplants.length > 0
-                                                        ? unit.mainplants.join(", ")
-                                                        : "Select Plants to deliver"}
-                                                </span>
-                                                <span className="arrow">▾</span>
-                                            </div>
-
-                                            {unit._openMainPlants && (
-                                                <div className="multi-select-dropdown">
-                                                    {[
-                                                        "Sceet", "Same", "Kunshan", "Anhui", "Tianjin",
-                                                        "Monterrey", "India", "Poitiers", "Cyclam",
-                                                        "Frankfurt", "Korea"
-                                                    ].map((plant) => {
-                                                        const selected = Array.isArray(unit.mainplants)
-                                                            ? unit.mainplants.includes(plant)
-                                                            : false;
-
-                                                        return (
-                                                            <div
-                                                                key={plant}
-                                                                className={`multi-option ${selected ? "selected" : ""}`}
-                                                                onClick={() => {
-                                                                    let updated = Array.isArray(unit.mainplants)
-                                                                        ? [...unit.mainplants]
-                                                                        : [];
-
-                                                                    if (selected) {
-                                                                        updated = updated.filter(p => p !== plant);
-                                                                    } else {
-                                                                        updated.push(plant);
-                                                                    }
-
-                                                                    onUnitChange(unitIndex, "mainplants", updated);
-                                                                }}
-                                                            >
-                                                                <input type="checkbox" checked={selected} readOnly />
-                                                                <span>{plant}</span>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-
-
-                                    {/* ===== PLANT (SINGLE SELECT) ===== */}
                                     <div className="form-group">
                                         <label htmlFor={`plant_${unitIndex}`} className="form-label">
                                             Plant
@@ -2175,12 +2420,6 @@ const CompleteCustomerModal = ({
                                             <option value="Korea">Korea</option>
                                         </select>
                                     </div>
-
-
-                                </div>
-
-
-                                <div className="form-row">
                                     <div className="form-group">
                                         <label htmlFor={`top_${unitIndex}`} className="form-label">
                                             TOP (Terms of Payment)
@@ -2200,6 +2439,9 @@ const CompleteCustomerModal = ({
                                             <option value="Cash in Advance">Cash in Advance</option>
                                         </select>
                                     </div>
+                                </div>
+
+                                <div className="form-row">
                                     <div className="form-group">
                                         <label htmlFor={`status_${unitIndex}`} className="form-label">
                                             Status
@@ -2217,9 +2459,6 @@ const CompleteCustomerModal = ({
                                             <option value="Suspended">Suspended</option>
                                         </select>
                                     </div>
-                                </div>
-
-                                <div className="form-row">
                                     <div className="form-group">
                                         <label htmlFor={`category_${unitIndex}`} className="form-label">
                                             Category
@@ -2238,13 +2477,270 @@ const CompleteCustomerModal = ({
                                             <option value="Other">Other</option>
                                         </select>
                                     </div>
-
-
                                 </div>
 
+                                {/* Plants to Deliver Section (Separate Table) */}
+                                <div className="section-subheader">
+                                    <div className="section-header">
+                                        <h5 style={{
+                                            borderLeft: '4px solid #6366f1',
+                                            borderRadius: '12px',
+                                            padding: '1.25rem 1.5rem',
+                                            margin: '1.5rem 0',
+                                            color: '#1e293b',
+                                            fontSize: '1.125rem',
+                                            fontWeight: '600',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.75rem',
+                                            letterSpacing: '-0.025em',
+                                            boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.05), 0 2px 4px -1px rgba(99, 102, 241, 0.03)',
+                                            backdropFilter: 'blur(10px)',
+                                            position: 'relative',
+                                            overflow: 'hidden',
+                                            color: '#6366f1',
+                                            fontSize:'22px',
+                                      
+                                        }}>
+                                            <i className="fas fa-truck-loading" style={{
+                                                color: '#6366f1',
+                                                background: 'linear-gradient(135deg, #e0e7ff, #c7d2fe)',
+                                                width: '2.5rem',
+                                                height: '2.5rem',
+                                                borderRadius: '10px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                fontSize: '1.125rem',
+                                                boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2), 0 2px 4px -1px rgba(99, 102, 241, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.5)'
+                                            }}></i>
+                                            Plants to Deliver
+                                            {unit.plants && unit.plants.length > 0 && (
+                                                <span style={{
+                                                    background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                                                    color: 'white',
+                                                    padding: '0.375rem 0.875rem',
+                                                    borderRadius: '9999px',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: '600',
+                                                    marginLeft: 'auto',
+                                                    boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.3), 0 2px 4px -1px rgba(99, 102, 241, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.1) inset'
+                                                }}>
+                                                    {unit.plants.length}
+                                                </span>
+                                            )}
+                                        </h5>
+                                        <button
+                                            type="button"
+                                            className="btn-primary btn-sm"
+                                            onClick={() => onAddPlant(unitIndex)}
+                                        >
+                                            <i className="fas fa-plus"></i> Add Plant
+                                        </button>
+                                    </div>
+                                </div>
 
-                                {/* ==================== CERTIFICATES SECTION ==================== */}
+                                {(!unit.plants || unit.plants.length === 0) && (
+                                    <div className="empty-plants-state">
+                                        <div className="empty-plants-icon">
+                                            <i className="fas fa-industry"></i>
+                                        </div>
+                                        <h4>No Plants Added Yet</h4>
+                                        <p>Add plants that this unit will deliver to (stored in separate table)</p>
+                                    </div>
+                                )}
 
+                                {unit.plants && unit.plants.map((plant, plantIndex) => (
+                                    <div key={plantIndex} className="plant-section">
+                                        <div className="plant-header">
+                                            <h6>
+                                                <i className="fas fa-industry"></i>
+                                                Plant {plantIndex + 1}
+                                                {plant.plant_id && <span className="plant-id-badge"> (ID: {plant.plant_id})</span>}
+                                            </h6>
+                                            <button
+                                                type="button"
+                                                className="btn-icon btn-delete"
+                                                onClick={() => onRemovePlant(unitIndex, plantIndex)}
+                                                title="Remove Plant"
+                                            >
+                                                <i className="fas fa-times"></i>
+                                            </button>
+                                        </div>
+
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label htmlFor={`plant_name_${unitIndex}_${plantIndex}`} className="form-label">
+                                                    Plant Name 
+                                                </label>
+                                                <select
+                                                    id={`plant_name_${unitIndex}_${plantIndex}`}
+                                                    value={plant.plant || ''}
+                                                    onChange={(e) => onPlantChange(unitIndex, plantIndex, 'plant', e.target.value)}
+                                                    className={`form-input ${formErrors[`plant_${unitIndex}_${plantIndex}_name`] ? 'error' : ''}`}
+                                                >
+                                                    <option value="">Select plant</option>
+                                                    <option value="Sceet">Sceet</option>
+                                                    <option value="Same">Same</option>
+                                                    <option value="Kunshan">Kunshan</option>
+                                                    <option value="Anhui">Anhui</option>
+                                                    <option value="Tianjin">Tianjin</option>
+                                                    <option value="Monterrey">Monterrey</option>
+                                                    <option value="India">India</option>
+                                                    <option value="Poitiers">Poitiers</option>
+                                                    <option value="Cyclam">Cyclam</option>
+                                                    <option value="Frankfurt">Frankfurt</option>
+                                                    <option value="Korea">Korea</option>
+                                                </select>
+                                                {formErrors[`plant_${unitIndex}_${plantIndex}_name`] && (
+                                                    <span className="error-message">{formErrors[`plant_${unitIndex}_${plantIndex}_name`]}</span>
+                                                )}
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label htmlFor={`acheteur_avo_${unitIndex}_${plantIndex}`} className="form-label">
+                                                    Acheteur AVO
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    id={`acheteur_avo_${unitIndex}_${plantIndex}`}
+                                                    value={plant.Acheteur_avo || ''}
+                                                    onChange={(e) => onPlantChange(unitIndex, plantIndex, 'Acheteur_avo', e.target.value)}
+                                                    className="form-input"
+                                                    placeholder="Enter acheteur AVO"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label htmlFor={`alias_${unitIndex}_${plantIndex}`} className="form-label">
+                                                    Alias
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    id={`alias_${unitIndex}_${plantIndex}`}
+                                                    value={plant.alias || ''}
+                                                    onChange={(e) => onPlantChange(unitIndex, plantIndex, 'alias', e.target.value)}
+                                                    className="form-input"
+                                                    placeholder="Enter alias"
+                                                />
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label htmlFor={`plant_top_${unitIndex}_${plantIndex}`} className="form-label">
+                                                    TOP
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    id={`plant_top_${unitIndex}_${plantIndex}`}
+                                                    value={plant.top || ''}
+                                                    onChange={(e) => onPlantChange(unitIndex, plantIndex, 'top', e.target.value)}
+                                                    className="form-input"
+                                                    placeholder="Enter TOP"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="form-row">
+                                            <div className="form-group">
+                                                <label htmlFor={`incoterms_${unitIndex}_${plantIndex}`} className="form-label">
+                                                    Incoterms
+                                                </label>
+                                                <select
+                                                    id={`incoterms_${unitIndex}_${plantIndex}`}
+                                                    value={plant.incoterms || ''}
+                                                    onChange={(e) => onPlantChange(unitIndex, plantIndex, 'incoterms', e.target.value)}
+                                                    className="form-input"
+                                                >
+                                                    <option value="">Select incoterms</option>
+                                                    <option value="EXW">EXW (Ex Works)</option>
+                                                    <option value="FCA">FCA (Free Carrier)</option>
+                                                    <option value="FAS">FAS (Free Alongside Ship)</option>
+                                                    <option value="FOB">FOB (Free On Board)</option>
+                                                    <option value="CFR">CFR (Cost and Freight)</option>
+                                                    <option value="CIF">CIF (Cost, Insurance and Freight)</option>
+                                                    <option value="CPT">CPT (Carriage Paid To)</option>
+                                                    <option value="CIP">CIP (Carriage and Insurance Paid To)</option>
+                                                    <option value="DAP">DAP (Delivered At Place)</option>
+                                                    <option value="DPU">DPU (Delivered at Place Unloaded)</option>
+                                                    <option value="DDP">DDP (Delivered Duty Paid)</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label htmlFor={`place_of_incoterms_${unitIndex}_${plantIndex}`} className="form-label">
+                                                    Place of Incoterms
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    id={`place_of_incoterms_${unitIndex}_${plantIndex}`}
+                                                    value={plant.place_of_incoterms || ''}
+                                                    onChange={(e) => onPlantChange(unitIndex, plantIndex, 'place_of_incoterms', e.target.value)}
+                                                    className="form-input"
+                                                    placeholder="Enter place of incoterms"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* File Upload for Fichier d'Accord */}
+                                        <div className="form-group">
+                                            <label htmlFor={`fichier_accord_${unitIndex}_${plantIndex}`} className="form-label">
+                                                Fichier d'Accord
+                                            </label>
+                                            <div className="file-upload-container">
+                                                <input
+                                                    type="file"
+                                                    id={`fichier_accord_${unitIndex}_${plantIndex}`}
+                                                    onChange={(e) => {
+                                                        const file = e.target.files[0];
+                                                        if (file) {
+                                                            onPlantChange(unitIndex, plantIndex, 'fichier_accord', null, file);
+                                                        }
+                                                    }}
+                                                    className="file-input"
+                                                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                                />
+                                                <div className="file-info">
+                                                    {plant.fichier_accord ? (
+                                                        <div className="file-preview">
+                                                            <i className="fas fa-file"></i>
+                                                            <span className="file-name">
+                                                                {plant.fichier_accord.name || plant.file_name || 'Uploaded file'}
+                                                            </span>
+                                                            {plant.fichier_accord_url && (
+                                                                <a
+                                                                    href={plant.fichier_accord_url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="file-preview-link"
+                                                                >
+                                                                    <i className="fas fa-eye"></i> Preview
+                                                                </a>
+                                                            )}
+                                                            <button
+                                                                type="button"
+                                                                className="btn-icon btn-sm"
+                                                                onClick={() => onPlantChange(unitIndex, plantIndex, 'fichier_accord', null, null)}
+                                                                title="Remove file"
+                                                            >
+                                                                <i className="fas fa-times"></i>
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="file-upload-placeholder">
+                                                            <i className="fas fa-cloud-upload-alt"></i>
+                                                            <span>Click to upload fichier d'accord (PDF, JPG, PNG, DOC)</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <small className="file-hint">Max file size: 10MB. Supported formats: PDF, JPG, PNG, DOC</small>
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {/* Certificates Section */}
                                 <div className="unit-certificates-section">
                                     <div className="section-subheader">
                                         <div className="section-header">
@@ -2253,14 +2749,12 @@ const CompleteCustomerModal = ({
                                                 type="button"
                                                 className="btn-primary btn-sm"
                                                 onClick={() => onAddCertificate(unitIndex)}
-
                                             >
                                                 <i className="fas fa-plus"></i> Add Certificate
                                             </button>
                                         </div>
                                     </div>
 
-                                    {/* Empty State for Certificates */}
                                     {(!unit.certificates || unit.certificates.length === 0) && (
                                         <div className="empty-certificates-state">
                                             <div className="empty-certificates-icon">
@@ -2270,8 +2764,6 @@ const CompleteCustomerModal = ({
                                             <p>Add certificates for this unit (e.g., ISO standards, compliance certificates)</p>
                                         </div>
                                     )}
-
-                                    {/* Certificates List */}
 
                                     {unit.certificates && unit.certificates.map((cert, certIndex) => (
                                         <div key={certIndex} className="certificate-form-section">
@@ -2412,7 +2904,6 @@ const CompleteCustomerModal = ({
                                         </div>
                                     ))}
                                 </div>
-
                             </div>
                         ))}
 
@@ -2447,7 +2938,7 @@ const CompleteCustomerModal = ({
 };
 
 // Customer Card Component
-const CustomerCard = ({ customer, onUnitClick, onEditGroupClick, onEditCompleteClick, onDeleteClick }) => {
+const CustomerCard = ({ customer, onUnitClick, onEditGroupClick, onEditCompleteClick, onDeleteClick, onPlantClick }) => {
     const fallbackCategory = customer.description?.toLowerCase().includes('automobile') ? 'automobile' : 'industry';
     const { clearbitUrl, googleFaviconUrl, genericFallback } = getCompanyLogo(customer.supplier_name, fallbackCategory);
 
@@ -2525,6 +3016,7 @@ const CustomerCard = ({ customer, onUnitClick, onEditGroupClick, onEditCompleteC
                                 key={unit.unit_id}
                                 unit={unit}
                                 onClick={() => onUnitClick(unit.unit_id)}
+                                onPlantClick={onPlantClick}  // Pass the plant click handler
                             />
                         ))
                     ) : (
@@ -2638,33 +3130,13 @@ const DeleteModal = ({ group, onConfirm, onClose }) => {
     );
 };
 
-// Unit Item Component with View Button and Plants to deliver Tree
-const UnitItem = ({ unit, onClick }) => {
+// Unit Item Component with View Button
+// Update the UnitItem component
+const UnitItem = ({ unit, onClick, onPlantClick }) => {
     const [showPlants, setShowPlants] = useState(false);
-    
-    // Helper function to get mainplants array
-    const getMainPlantsArray = () => {
-        if (!unit.mainplants) return [];
-        
-        // Handle different formats: string, array, or comma-separated string
-        if (Array.isArray(unit.mainplants)) {
-            return unit.mainplants;
-        } else if (typeof unit.mainplants === 'string') {
-            // Split by comma and clean up
-            return unit.mainplants.split(',')
-                .map(plant => plant.trim())
-                .filter(plant => plant !== '');
-        }
-        
-        return [];
-    };
-    
-    const mainPlantsArray = getMainPlantsArray();
-    const hasMainPlants = mainPlantsArray.length > 0;
-    
+
     const handleUnitClick = (e) => {
-        // Prevent triggering both unit click and button click
-        if (!e.target.closest('.unit-view-btn')) {
+        if (!e.target.closest('.unit-view-btn') && !e.target.closest('.plant-clickable')) {
             setShowPlants(!showPlants);
         }
     };
@@ -2672,6 +3144,38 @@ const UnitItem = ({ unit, onClick }) => {
     const handleViewClick = (e) => {
         e.stopPropagation();
         onClick();
+    };
+
+    const handlePlantClick = (e, plant) => {
+        e.stopPropagation();
+        e.preventDefault();
+        onPlantClick(plant);
+    };
+
+    const getPlantType = (plantName) => {
+        const plantNameLower = plantName?.toLowerCase() || '';
+        if (plantNameLower.includes('sceet') || plantNameLower.includes('same') ||
+            plantNameLower.includes('anhui') || plantNameLower.includes('india') ||
+            plantNameLower.includes('korea')) {
+            return 'Manufacturing';
+        } else if (plantNameLower.includes('monterrey')) {
+            return 'Assembly';
+        } else if (plantNameLower.includes('kunshan') || plantNameLower.includes('tianjin')) {
+            return 'Production';
+        } else if (plantNameLower.includes('poitiers')) {
+            return 'R&D';
+        } else if (plantNameLower.includes('cyclam')) {
+            return 'Development';
+        } else if (plantNameLower.includes('frankfurt')) {
+            return 'Sales';
+        } else {
+            return 'Manufacturing';
+        }
+    };
+
+    const formatPlantName = (plantName) => {
+        if (!plantName) return '';
+        return plantName.charAt(0).toUpperCase() + plantName.slice(1);
     };
 
     return (
@@ -2687,11 +3191,11 @@ const UnitItem = ({ unit, onClick }) => {
                                 {unit.certificates.length}
                             </span>
                         )}
-                        {/* Plants to deliver badge */}
-                        {hasMainPlants && (
+                        {/* Plants to deliver badge - using unit.plants array */}
+                        {unit.plants && unit.plants.length > 0 && (
                             <span className="mainplants-count-badge">
                                 <i className="fas fa-industry"></i>
-                                {mainPlantsArray.length}
+                                {unit.plants.length}
                             </span>
                         )}
                     </div>
@@ -2710,17 +3214,17 @@ const UnitItem = ({ unit, onClick }) => {
                             </span>
                         )}
                         {/* Show first plant as preview */}
-                        {hasMainPlants && !showPlants && (
+                        {unit.plants && unit.plants.length > 0 && !showPlants && (
                             <span className="unit-plants-preview">
                                 <i className="fas fa-industry"></i>
-                                {mainPlantsArray.slice(0, 2).join(', ')}
-                                {mainPlantsArray.length > 2 && ` +${mainPlantsArray.length - 2}`}
+                                {unit.plants.slice(0, 2).map(p => p.plant).join(', ')}
+                                {unit.plants.length > 2 && ` +${unit.plants.length - 2}`}
                             </span>
                         )}
                     </div>
                 </div>
                 <div className="unit-actions">
-                    <button 
+                    <button
                         className="unit-view-btn"
                         onClick={handleViewClick}
                         title="View Unit Details"
@@ -2732,59 +3236,100 @@ const UnitItem = ({ unit, onClick }) => {
                     </div>
                 </div>
             </div>
-            
-            {/* Plants to deliver Tree Structure */}
-            {showPlants && hasMainPlants && (
+
+            {/* Plants to deliver Tree Structure - using unit.plants array */}
+            {showPlants && unit.plants && unit.plants.length > 0 && (
                 <div className="plants-tree-container">
                     <div className="plants-tree">
                         <div className="tree-header">
                             <i className="fas fa-industry"></i>
                             <h5>Plants to deliver</h5>
-                            <span className="plants-count">{mainPlantsArray.length} plant(s)</span>
+                            <span className="plants-count">{unit.plants.length} plant(s)</span>
                         </div>
                         <div className="tree-branches">
                             <div className="tree-trunk"></div>
                             <div className="tree-leaves">
-                                {mainPlantsArray.map((plant, index) => (
-                                    <div key={`${unit.unit_id}-${index}`} className="tree-leaf">
-                                        <div className="leaf-dot">
-                                            <i className="fas fa-industry"></i>
+                                {unit.plants.map((plant, index) => {
+                                    const formattedPlantName = formatPlantName(plant.plant);
+                                    const plantType = getPlantType(plant.plant);
+                                    const hasAlias = plant.alias && plant.alias.trim() !== '';
+
+                                    return (
+                                        <div
+                                            key={`${plant.plant_id || index}`}
+                                            className="tree-leaf plant-clickable"
+                                            onClick={(e) => handlePlantClick(e, plant)}
+                                        >
+                                            <div className="leaf-dot">
+                                                <i className="fas fa-industry"></i>
+                                            </div>
+                                            <div className="leaf-text">
+                                                <span className="plant-name">{formattedPlantName}</span>
+                                                {hasAlias && (
+                                                    <span className="plant-alias">({plant.alias})</span>
+                                                )}
+                                                <span className="plant-type">({plantType})</span>
+
+                                                {/* Show additional plant info if available */}
+                                                {plant.Acheteur_avo && (
+                                                    <span className="plant-detail">
+                                                        <i className="fas fa-user"></i> {plant.Acheteur_avo}
+                                                    </span>
+                                                )}
+
+                                                {/* Show delivery status if available */}
+                                                {plant.delivered !== undefined && (
+                                                    <span className={`plant-status ${plant.delivered ? 'delivered' : 'pending'}`}>
+                                                        {plant.delivered ? '✓ Delivered' : '⏱ Pending'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="leaf-connector"></div>
                                         </div>
-                                        <div className="leaf-text">
-                                            <span className="plant-name">{plant}</span>
-                                            {/* Add plant type based on name if needed */}
-                                            {plant.includes('Sceet') && <span className="plant-type">(Manufacturing)</span>}
-                                            {plant.includes('Kunshan') && <span className="plant-type">(Production)</span>}
-                                            {plant.includes('Monterrey') && <span className="plant-type">(Assembly)</span>}
-                                        </div>
-                                        <div className="leaf-connector"></div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
-                        
+
                         {/* Plants Summary */}
                         <div className="plants-summary">
                             <div className="summary-item">
                                 <i className="fas fa-map-pin"></i>
-                                <span>Total Plants: {mainPlantsArray.length}</span>
+                                <span>Total Plants: {unit.plants.length}</span>
                             </div>
-                      
+                            {unit.plants.some(p => p.Acheteur_avo) && (
+                                <div className="summary-item">
+                                    <i className="fas fa-user"></i>
+                                    <span>With Acheteur: {
+                                        unit.plants.filter(p => p.Acheteur_avo).length
+                                    }</span>
+                                </div>
+                            )}
+                            {unit.plants.some(p => p.delivered) && (
+                                <div className="summary-item">
+                                    <i className="fas fa-check-circle"></i>
+                                    <span>Delivered: {
+                                        unit.plants.filter(p => p.delivered).length
+                                    }</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
             )}
-            
-            {showPlants && !hasMainPlants && (
+
+            {showPlants && (!unit.plants || unit.plants.length === 0) && (
                 <div className="no-plants-message">
                     <i className="fas fa-industry"></i>
-                    <span>No Plants to deliver configured</span>
+                    <div>
+                        <h5>No Plants to deliver</h5>
+                        <p>This unit has no plants configured for delivery.</p>
+                    </div>
                 </div>
             )}
         </div>
     );
 };
-
 // Unit Modal Component
 const UnitModal = ({ unit, onClose }) => {
     if (!unit) return null;
@@ -2793,18 +3338,16 @@ const UnitModal = ({ unit, onClose }) => {
     const getFileUrl = (fileUrl) => {
         if (!fileUrl) return null;
 
-        // If it already has the full URL, use it as is
         if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
             return fileUrl;
         }
 
-        // Otherwise, prepend the base URL
-        return `https://supplier-back.azurewebsites.net${fileUrl}`;
+        return `http://localhost:5000${fileUrl}`;
     };
 
     // Helper function to get file name
     const getFileName = (filePath) => {
-        if (!filePath) return 'Certificate';
+        if (!filePath) return 'File';
         return filePath.split('/').pop();
     };
 
@@ -2835,6 +3378,48 @@ const UnitModal = ({ unit, onClose }) => {
                             <DetailItem label="Zone" value={unit.zone_name} />
                         </div>
                     </div>
+
+                    {/* Plants to Deliver Section (Separate Table) */}
+                    {unit.plants && unit.plants.length > 0 && (
+                        <div className="detail-section">
+                            <h3>
+                                <i className="fas fa-truck-loading"></i> Plants to Deliver ({unit.plants.length})
+                            </h3>
+                            <div className="plants-grid">
+                                {unit.plants.map((plant, index) => (
+                                    <div key={index} className="plant-card">
+                                        <div className="plant-header">
+                                            <i className="fas fa-industry"></i>
+                                            <span className="plant-name">{plant.plant}</span>
+                                            {plant.alias && <span className="plant-alias">({plant.alias})</span>}
+                                            {plant.plant_id && <span className="plant-id-badge">ID: {plant.plant_id}</span>}
+                                        </div>
+                                        <div className="plant-details">
+                                            <DetailItem label="Acheteur AVO" value={plant.Acheteur_avo} />
+                                            <DetailItem label="TOP" value={plant.top} />
+                                            <DetailItem label="Incoterms" value={plant.incoterms} />
+                                            <DetailItem label="Place of Incoterms" value={plant.place_of_incoterms} />
+                                            {plant.fichier_accord && (
+                                                <div className="file-preview-container">
+                                                    <a
+                                                        href={getFileUrl(plant.fichier_accord)}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="file-link"
+                                                    >
+                                                        <i className="fas fa-file-contract"></i> Fichier d'Accord
+                                                    </a>
+                                                    <span className="file-name">
+                                                        {getFileName(plant.fichier_accord)}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Account Information Section */}
                     <div className="detail-section">
@@ -2924,7 +3509,6 @@ const UnitModal = ({ unit, onClose }) => {
                             <i className="fas fa-info-circle"></i> Additional Information
                         </h3>
                         <div className="detail-grid">
-                            <DetailItem label="Plants to deliver" value={unit.mainplants} />
                             <DetailItem label="Plant" value={unit.plant} />
                             <DetailItem label="TOP" value={unit.top} />
                             <DetailItem label="Status" value={unit.status} />
@@ -2958,6 +3542,8 @@ const UnitModal = ({ unit, onClose }) => {
                         </div>
                     </div>
 
+
+
                     {/* Responsible Person Section */}
                     {unit.responsible && (
                         <div className="detail-section">
@@ -2990,7 +3576,7 @@ const UnitModal = ({ unit, onClose }) => {
                         </div>
                     )}
 
-                    {/* ==================== CERTIFICATES SECTION ==================== */}
+                    {/* Certificates Section */}
                     {unit.certificates && unit.certificates.length > 0 && (
                         <div className="detail-section">
                             <h3>
@@ -2998,9 +3584,8 @@ const UnitModal = ({ unit, onClose }) => {
                             </h3>
                             <div className="certificates-grid">
                                 {unit.certificates.map((cert) => {
-                                    const fileUrl = cert.file_url; // Full URL from DB
-                                    // Console the file_url for debugging
-                                    console.log('Certificate file_url:', fileUrl);
+                                    const fileUrl = cert.file_url;
+                                    const fileName = cert.file_name || 'Certificate';
 
                                     return (
                                         <div key={cert.certificat_id || cert.Type} className="certificate-card">
@@ -3039,6 +3624,9 @@ const UnitModal = ({ unit, onClose }) => {
                                                             <a href={getFileUrl(cert.file_url)} target="_blank" rel="noopener noreferrer">
                                                                 View
                                                             </a>
+                                                            <a href={getFileUrl(cert.file_url)} download={fileName}>
+                                                                Download
+                                                            </a>
                                                         </div>
                                                     </div>
                                                 )}
@@ -3049,13 +3637,11 @@ const UnitModal = ({ unit, onClose }) => {
                             </div>
                         </div>
                     )}
-
                 </div>
             </div>
         </div>
     );
 };
-
 
 // Detail Item Component
 const DetailItem = ({ label, value, icon, isEmail = false, isPhone = false }) => {
