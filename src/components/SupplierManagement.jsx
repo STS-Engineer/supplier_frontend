@@ -2487,8 +2487,6 @@ const CompleteCustomerModal = ({
                                             borderRadius: '12px',
                                             padding: '1.25rem 1.5rem',
                                             margin: '1.5rem 0',
-                                            color: '#1e293b',
-                                            fontSize: '1.125rem',
                                             fontWeight: '600',
                                             display: 'flex',
                                             alignItems: 'center',
