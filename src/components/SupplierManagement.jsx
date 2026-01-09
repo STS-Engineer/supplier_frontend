@@ -13,7 +13,7 @@ const PlantTree = ({ plant, onClose }) => {
         if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
             return filePath;
         }
-        return `http://localhost:5000${filePath}`;
+        return `https://supplier-back.azurewebsites.net${filePath}`;
     };
 
     const getPlantType = (plantName) => {
@@ -575,7 +575,7 @@ const SupplierManagement = () => {
                             if (plant.fichier_accord.startsWith('http')) {
                                 file_url = plant.fichier_accord;
                             } else if (plant.fichier_accord.startsWith('/uploads')) {
-                                file_url = `http://localhost:5000${plant.fichier_accord}`;
+                                file_url = `https://supplier-back.azurewebsites.net${plant.fichier_accord}`;
                             }
                         }
 
@@ -600,7 +600,7 @@ const SupplierManagement = () => {
                         validity_date: cert.validity_date || '',
                         custom_type: cert.custom_type || '',
                         file: null,
-                        file_url: cert.file ? (cert.file.startsWith('http') ? cert.file : `http://localhost:5000${cert.file}`) : cert.file_url || null,
+                        file_url: cert.file ? (cert.file.startsWith('http') ? cert.file : `https://supplier-back.azurewebsites.net${cert.file}`) : cert.file_url || null,
                         file_name: cert.file ? cert.file.split('/').pop() : null
                     }))
                 };
@@ -3340,7 +3340,7 @@ const UnitModal = ({ unit, onClose }) => {
             return fileUrl;
         }
 
-        return `http://localhost:5000${fileUrl}`;
+        return `https://supplier-back.azurewebsites.net${fileUrl}`;
     };
 
     // Helper function to get file name
