@@ -3080,20 +3080,8 @@ const DeleteModal = ({ group, onConfirm, onClose }) => {
     );
 };
 
-// Add this helper function near the top of your file (after imports)
-const getSupplierNameFromUnit = (unit, customers) => {
-    if (!unit || !customers) return '';
-    
-    // If unit already has supplier_name (from API), use it
-    if (unit.supplier_name) return unit.supplier_name;
-    
-    // Otherwise, find the supplier by supplier_id
-    const customer = customers.find(c => c.supplier_id === unit.supplier_id);
-    return customer ? customer.supplier_name : '';
-};
 
 
-// Unit Item Component with View Button
 // Update the UnitItem component
 const UnitItem = ({ unit,supplierName, onClick, onPlantClick }) => {
     const [showPlants, setShowPlants] = useState(false);
@@ -3223,8 +3211,7 @@ const UnitItem = ({ unit,supplierName, onClick, onPlantClick }) => {
                     <div className="tree-leaves">
                         {unit.plants.map((plant, index) => {
                             const formattedPlantName = formatPlantName(plant.plant);
-                            const plantType = getPlantType(plant.plant);
-                            const hasAlias = plant.alias && plant.alias.trim() !== '';
+                    
 
                             return (
                                 <div
