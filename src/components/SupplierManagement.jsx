@@ -132,7 +132,7 @@ const PlantTree = ({ plant, onClose }) => {
                                     <a href={getFileUrl(plant.fichier_accord)} target="_blank" rel="noopener noreferrer">
                                         <i className="fas fa-eye"></i> View File
                                     </a>
-                           
+
                                 </div>
                             </div>
                         )}
@@ -484,6 +484,9 @@ const SupplierManagement = () => {
         setFormErrors({});
         setIsGroupModalOpen(true);
     };
+
+
+
 
     const openEditCompleteCustomerModal = async (customer) => {
         try {
@@ -1076,6 +1079,9 @@ const SupplierManagement = () => {
             throw error;
         }
     };
+
+
+
     // Helper function to handle certificates data
     const handleUnitCertificates = async (unit, unitId) => {
         try {
@@ -2295,7 +2301,7 @@ const CompleteCustomerModal = ({
                                     </div>
                                 </div>
 
-                          
+
 
                                 {/* Agreements Section */}
                                 <div className="section-subheader">
@@ -2939,6 +2945,7 @@ const CustomerCard = ({ customer, onUnitClick, onEditGroupClick, onEditCompleteC
                             <UnitItem
                                 key={unit.unit_id}
                                 unit={unit}
+                                supplierName={customer.supplier_name} // Add this line
                                 onClick={() => onUnitClick(unit.unit_id)}
                                 onPlantClick={onPlantClick}  // Pass the plant click handler
                             />
@@ -3073,9 +3080,22 @@ const DeleteModal = ({ group, onConfirm, onClose }) => {
     );
 };
 
+// Add this helper function near the top of your file (after imports)
+const getSupplierNameFromUnit = (unit, customers) => {
+    if (!unit || !customers) return '';
+    
+    // If unit already has supplier_name (from API), use it
+    if (unit.supplier_name) return unit.supplier_name;
+    
+    // Otherwise, find the supplier by supplier_id
+    const customer = customers.find(c => c.supplier_id === unit.supplier_id);
+    return customer ? customer.supplier_name : '';
+};
+
+
 // Unit Item Component with View Button
 // Update the UnitItem component
-const UnitItem = ({ unit, onClick, onPlantClick }) => {
+const UnitItem = ({ unit,supplierName, onClick, onPlantClick }) => {
     const [showPlants, setShowPlants] = useState(false);
 
     const handleUnitClick = (e) => {
@@ -3181,85 +3201,69 @@ const UnitItem = ({ unit, onClick, onPlantClick }) => {
             </div>
 
             {/* Plants to deliver Tree Structure - using unit.plants array */}
-            {showPlants && unit.plants && unit.plants.length > 0 && (
-                <div className="plants-tree-container">
-                    <div className="plants-tree">
-                        <div className="tree-header">
-                            <i className="fas fa-industry"></i>
+      
+    {showPlants && unit.plants && unit.plants.length > 0 && (
+        <div className="plants-tree-container">
+            <div className="plants-tree">
+                {/* Update the tree-header to include supplier name */}
+                <div className="tree-header">
+                    <i className="fas fa-industry"></i>
+                    <div className="tree-header-content">
+                        <div className="tree-title-section">
                             <h5>Plants to deliver</h5>
-                            <span className="plants-count">{unit.plants.length} plant(s)</span>
+                            
                         </div>
-                        <div className="tree-branches">
-                            <div className="tree-trunk"></div>
-                            <div className="tree-leaves">
-                                {unit.plants.map((plant, index) => {
-                                    const formattedPlantName = formatPlantName(plant.plant);
-                                    const plantType = getPlantType(plant.plant);
-                                    const hasAlias = plant.alias && plant.alias.trim() !== '';
-
-                                    return (
-                                        <div
-                                            key={`${plant.plant_id || index}`}
-                                            className="tree-leaf plant-clickable"
-                                            onClick={(e) => handlePlantClick(e, plant)}
-                                        >
-                                            <div className="leaf-dot">
-                                                <i className="fas fa-industry"></i>
-                                            </div>
-                                            <div className="leaf-text">
-                                                <span className="plant-name">{formattedPlantName}</span>
-                                                {hasAlias && (
-                                                    <span className="plant-alias">({plant.alias})</span>
-                                                )}
-                                                <span className="plant-type">({plantType})</span>
-
-                                                {/* Show additional plant info if available */}
-                                                {plant.Acheteur_avo && (
-                                                    <span className="plant-detail">
-                                                        <i className="fas fa-user"></i> {plant.Acheteur_avo}
-                                                    </span>
-                                                )}
-
-                                                {/* Show delivery status if available */}
-                                                {plant.delivered !== undefined && (
-                                                    <span className={`plant-status ${plant.delivered ? 'delivered' : 'pending'}`}>
-                                                        {plant.delivered ? '✓ Delivered' : '⏱ Pending'}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div className="leaf-connector"></div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        {/* Plants Summary */}
-                        <div className="plants-summary">
-                            <div className="summary-item">
-                                <i className="fas fa-map-pin"></i>
-                                <span>Total Plants: {unit.plants.length}</span>
-                            </div>
-                            {unit.plants.some(p => p.Acheteur_avo) && (
-                                <div className="summary-item">
-                                    <i className="fas fa-user"></i>
-                                    <span>With Acheteur: {
-                                        unit.plants.filter(p => p.Acheteur_avo).length
-                                    }</span>
-                                </div>
-                            )}
-                            {unit.plants.some(p => p.delivered) && (
-                                <div className="summary-item">
-                                    <i className="fas fa-check-circle"></i>
-                                    <span>Delivered: {
-                                        unit.plants.filter(p => p.delivered).length
-                                    }</span>
-                                </div>
-                            )}
-                        </div>
+                       
                     </div>
                 </div>
-            )}
+                
+                {/* Rest of your existing tree structure remains the same */}
+                <div className="tree-branches">
+                    <div className="tree-trunk"></div>
+                    <div className="tree-leaves">
+                        {unit.plants.map((plant, index) => {
+                            const formattedPlantName = formatPlantName(plant.plant);
+                            const plantType = getPlantType(plant.plant);
+                            const hasAlias = plant.alias && plant.alias.trim() !== '';
+
+                            return (
+                                <div
+                                    key={`${plant.plant_id || index}`}
+                                    className="tree-leaf plant-clickable"
+                                    onClick={(e) => handlePlantClick(e, plant)}
+                                >
+                                    <div className="leaf-dot">
+                                        <i className="fas fa-industry"></i>
+                                    </div>
+                                    <div className="leaf-text">
+                                        <span className="plant-name">{supplierName} {formattedPlantName} </span>
+                                     
+                                        
+                                        {/* Show additional plant info if available */}
+                                        {plant.Acheteur_avo && (
+                                            <span className="plant-detail">
+                                                <i className="fas fa-user"></i> {plant.Acheteur_avo}
+                                            </span>
+                                        )}
+
+                                        {/* Show delivery status if available */}
+                                        {plant.delivered !== undefined && (
+                                            <span className={`plant-status ${plant.delivered ? 'delivered' : 'pending'}`}>
+                                                {plant.delivered ? '✓ Delivered' : '⏱ Pending'}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="leaf-connector"></div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+             
+            </div>
+        </div>
+    )}
 
             {showPlants && (!unit.plants || unit.plants.length === 0) && (
                 <div className="no-plants-message">
@@ -3428,7 +3432,7 @@ const UnitModal = ({ unit, onClose }) => {
                                 <DetailItem label="Shipping Country" value={unit.shipping_country} />
                             </div>
                         </div>
-                      
+
                     </div>
 
                     {/* Agreements Section */}
@@ -3488,7 +3492,7 @@ const UnitModal = ({ unit, onClose }) => {
                             <div className="certificates-grid">
                                 {unit.certificates.map((cert) => {
                                     const fileUrl = cert.file_url;
-                                 
+
                                     return (
                                         <div key={cert.certificat_id || cert.Type} className="certificate-card">
                                             <div className="certificate-header">
@@ -3526,7 +3530,7 @@ const UnitModal = ({ unit, onClose }) => {
                                                             <a href={getFileUrl(cert.file_url)} target="_blank" rel="noopener noreferrer">
                                                                 View
                                                             </a>
-                                                      
+
                                                         </div>
                                                     </div>
                                                 )}
