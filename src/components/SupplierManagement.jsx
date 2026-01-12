@@ -1588,50 +1588,6 @@ const CompleteCustomerModal = ({
     onPlantChange
 }) => {
     const [persons, setPersons] = useState([]);
-    const [loadingPersons, setLoadingPersons] = useState(true);
-
-    useEffect(() => {
-        const fetchPersons = async () => {
-            try {
-                setLoadingPersons(true);
-                const response = await fetch('https://supplier-back.azurewebsites.net/ajouter/api/persons');
-                if (!response.ok) throw new Error('Failed to fetch persons');
-                const personsData = await response.json();
-                setPersons(personsData);
-            } catch (error) {
-                console.error('Error fetching persons:', error);
-                setPersons([]);
-            } finally {
-                setLoadingPersons(false);
-            }
-        };
-
-        fetchPersons();
-    }, []);
-
-    const handlePersonChange = (unitIndex, personId) => {
-        const selectedPersonData = persons.find(person => person.Person_id === parseInt(personId));
-
-        if (selectedPersonData) {
-            onResponsibleChange(unitIndex, 'Person_id', selectedPersonData.Person_id);
-            onResponsibleChange(unitIndex, 'first_name', selectedPersonData.first_name);
-            onResponsibleChange(unitIndex, 'last_name', selectedPersonData.last_name);
-            onResponsibleChange(unitIndex, 'job_title', selectedPersonData.job_title || '');
-            onResponsibleChange(unitIndex, 'email', selectedPersonData.email || '');
-            onResponsibleChange(unitIndex, 'phone_number', selectedPersonData.phone_number || '');
-            onResponsibleChange(unitIndex, 'role', selectedPersonData.role || 'Contact');
-            onResponsibleChange(unitIndex, 'zone_name', selectedPersonData.zone_name || '');
-        } else {
-            onResponsibleChange(unitIndex, 'Person_id', null);
-            onResponsibleChange(unitIndex, 'first_name', '');
-            onResponsibleChange(unitIndex, 'last_name', '');
-            onResponsibleChange(unitIndex, 'job_title', '');
-            onResponsibleChange(unitIndex, 'email', '');
-            onResponsibleChange(unitIndex, 'phone_number', '');
-            onResponsibleChange(unitIndex, 'role', 'Contact');
-            onResponsibleChange(unitIndex, 'zone_name', '');
-        }
-    };
 
     useEffect(() => {
         console.log('🔍 Modal data received:', data);
