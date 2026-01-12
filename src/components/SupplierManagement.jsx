@@ -290,61 +290,53 @@ const SupplierManagement = () => {
     const handleCertificateChange = (unitIndex, certIndex, field, value, file = null) => {
         console.log('Certificate change:', unitIndex, certIndex, field, value, file);
 
-        setCompleteCustomerData(prev => {
-            const updated = JSON.parse(JSON.stringify(prev));
+        setCompleteCustomerData(prev => ({
+            ...prev,
+            units: prev.units.map((unit, uIdx) => {
+                if (uIdx !== unitIndex) return unit;
 
-            if (!updated.units[unitIndex]) return prev;
+                return {
+                    ...unit,
+                    certificates: (unit.certificates || []).map((cert, cIdx) => {
+                        if (cIdx !== certIndex) return cert;
 
-            if (!updated.units[unitIndex].certificates) {
-                updated.units[unitIndex].certificates = [];
-            }
-
-            if (!updated.units[unitIndex].certificates[certIndex]) {
-                updated.units[unitIndex].certificates[certIndex] = {
-                    Type: '',
-                    validity_date: '',
-                    certificat_id: null,
-                    custom_type: '',
-                    file: null,
-                    file_url: null
+                        if (field === 'file') {
+                            return { ...cert, file: file, file_name: file ? file.name : null };
+                        } else {
+                            return { ...cert, [field]: value };
+                        }
+                    })
                 };
-            }
-
-            if (field === 'file') {
-                updated.units[unitIndex].certificates[certIndex].file = file;
-                updated.units[unitIndex].certificates[certIndex].file_name = file ? file.name : null;
-            } else {
-                updated.units[unitIndex].certificates[certIndex][field] = value;
-            }
-
-            return updated;
-        });
+            })
+        }));
     };
 
     const addCertificate = (unitIndex) => {
         console.log('addCertificate called for unit:', unitIndex);
 
         setCompleteCustomerData(prev => {
-            const updated = JSON.parse(JSON.stringify(prev));
+            const updated = {
+                ...prev,
+                units: prev.units.map((unit, idx) => {
+                    if (idx !== unitIndex) return unit;
 
-            if (!updated.units[unitIndex]) {
-                console.error('Unit not found at index:', unitIndex);
-                return prev;
-            }
-
-            if (!updated.units[unitIndex].certificates) {
-                updated.units[unitIndex].certificates = [];
-            }
-
-            updated.units[unitIndex].certificates.push({
-                Type: '',
-                validity_date: '',
-                certificat_id: null,
-                custom_type: '',
-                file: null,
-                file_url: null,
-                file_name: null
-            });
+                    return {
+                        ...unit,
+                        certificates: [
+                            ...(unit.certificates || []),
+                            {
+                                Type: '',
+                                validity_date: '',
+                                certificat_id: null,
+                                custom_type: '',
+                                file: null,
+                                file_url: null,
+                                file_name: null
+                            }
+                        ]
+                    };
+                })
+            };
 
             console.log(`Unit ${unitIndex} now has ${updated.units[unitIndex].certificates.length} certificates`);
             return updated;
@@ -364,69 +356,96 @@ const SupplierManagement = () => {
 
     // Plant Functions (Separate Table)
     const handlePlantChange = (unitIndex, plantIndex, field, value, file = null) => {
-        console.log('🔧 handlePlantChange called:', { unitIndex, plantIndex, field, value, file });
+        console.log('🔧 handlePlantChange called:', {
+            unitIndex,
+            plantIndex,
+            field,
+            value,
+            file: file ? `File: ${file.name}` : 'null'
+        });
 
         setCompleteCustomerData(prev => {
-            const updated = JSON.parse(JSON.stringify(prev));
+            // ⚠️ DON'T use JSON.parse(JSON.stringify()) - it destroys File objects!
+            // Instead, manually clone the structure
+            const updated = {
+                ...prev,
+                units: prev.units.map((unit, uIdx) => {
+                    if (uIdx !== unitIndex) return unit;
 
-            if (!updated.units[unitIndex]) return prev;
+                    return {
+                        ...unit,
+                        plants: (unit.plants || []).map((plant, pIdx) => {
+                            if (pIdx !== plantIndex) return plant;
 
-            if (!updated.units[unitIndex].plants) {
-                updated.units[unitIndex].plants = [];
-            }
+                            // This is the plant we're updating
+                            if (field === 'fichier_accord' && file) {
+                                console.log('✅ Setting fichier_accord file:', {
+                                    name: file.name,
+                                    size: file.size,
+                                    type: file.type
+                                });
 
-            if (!updated.units[unitIndex].plants[plantIndex]) {
-                updated.units[unitIndex].plants[plantIndex] = {
-                    plant_id: null,
-                    plant: '',
-                    Acheteur_avo: '',
-                    alias: '',
-                    top: '',
-                    incoterms: '',
-                    place_of_incoterms: '',
-                    fichier_accord: null,
-                    fichier_accord_url: null
-                };
-            }
+                                return {
+                                    ...plant,
+                                    fichier_accord: file, // Store the actual File object
+                                    file_name: file.name
+                                };
+                            } else if (field === 'fichier_accord' && !file) {
+                                // Clear the file
+                                return {
+                                    ...plant,
+                                    fichier_accord: null,
+                                    file_name: null,
+                                    fichier_accord_url: null
+                                };
+                            } else {
+                                // Handle other fields
+                                const dbFieldName = field === 'place_of_incoterms' ? 'place_of_incoterms' : field;
+                                return {
+                                    ...plant,
+                                    [dbFieldName]: value
+                                };
+                            }
+                        })
+                    };
+                })
+            };
 
-            if (field === 'fichier_accord') {
-                console.log('📎 Setting file:', file);
-                updated.units[unitIndex].plants[plantIndex].fichier_accord = file;
-                updated.units[unitIndex].plants[plantIndex].file_name = file ? file.name : null;
-
-                // Log what we just set
-                console.log('✅ Plant after setting file:', updated.units[unitIndex].plants[plantIndex]);
-            } else {
-                const dbFieldName = field === 'place_of_incoterms' ? 'place_of_incoterms' : field;
-                updated.units[unitIndex].plants[plantIndex][dbFieldName] = value;
-            }
+            console.log('✅ State updated. Plant now has file:',
+                updated.units[unitIndex]?.plants[plantIndex]?.fichier_accord instanceof File
+            );
 
             return updated;
         });
     };
     const addPlant = (unitIndex) => {
         setCompleteCustomerData(prev => {
-            const updated = JSON.parse(JSON.stringify(prev));
+            // ⚠️ NEVER use JSON.parse(JSON.stringify()) - it destroys File objects!
+            // Use spread operator instead
+            const updated = {
+                ...prev,
+                units: prev.units.map((unit, idx) => {
+                    if (idx !== unitIndex) return unit;
 
-            if (!updated.units[unitIndex]) {
-                return prev;
-            }
-
-            if (!updated.units[unitIndex].plants) {
-                updated.units[unitIndex].plants = [];
-            }
-
-            updated.units[unitIndex].plants.push({
-                plant_id: null,
-                plant: '',
-                Acheteur_avo: '',
-                alias: '',
-                top: '',
-                incoterms: '',
-                place_of_incoterms: '',
-                fichier_accord: null,
-                fichier_accord_url: null
-            });
+                    return {
+                        ...unit,
+                        plants: [
+                            ...(unit.plants || []),
+                            {
+                                plant_id: null,
+                                plant: '',
+                                Acheteur_avo: '',
+                                alias: '',
+                                top: '',
+                                incoterms: '',
+                                place_of_incoterms: '',
+                                fichier_accord: null,
+                                fichier_accord_url: null
+                            }
+                        ]
+                    };
+                })
+            };
 
             return updated;
         });
@@ -914,10 +933,19 @@ const SupplierManagement = () => {
     };
 
     // Helper function to handle plants data
-    // Helper function to handle plants data - UPDATED VERSION
     const handleUnitPlants = async (unit, unitId) => {
         try {
-            console.log('🌱 Handling plants for unit:', unit.unit_name, 'ID:', unitId);
+            console.log('\n🌱 ========== HANDLING PLANTS ==========');
+            console.log('Unit:', unit.unit_name, '| Unit ID:', unitId);
+            console.log('Total plants to process:', unit.plants?.length || 0);
+
+            // LOG THE ENTIRE UNIT OBJECT
+            console.log('📋 FULL UNIT OBJECT:', JSON.stringify(unit, (key, value) => {
+                if (value instanceof File) {
+                    return `File(${value.name}, ${value.size} bytes)`;
+                }
+                return value;
+            }, 2));
 
             // Get existing plants for this unit
             const existingResponse = await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/plants/by-unit/${unitId}`);
@@ -933,11 +961,11 @@ const SupplierManagement = () => {
                 !currentPlantIds.includes(plant.plant_id)
             );
 
-            console.log('Plants to delete:', plantsToDelete.length);
+            console.log('📊 Plants to delete:', plantsToDelete.length);
 
             // Delete plants that were removed
             const deletePromises = plantsToDelete.map(async (plant) => {
-                console.log('Deleting plant:', plant.plant_id);
+                console.log('🗑️  Deleting plant:', plant.plant_id);
                 await fetch(`https://supplier-back.azurewebsites.net/ajouter/api/plants/${plant.plant_id}`, {
                     method: 'DELETE',
                 });
@@ -945,13 +973,26 @@ const SupplierManagement = () => {
 
             // Handle plant updates/creations
             const updatePromises = (unit.plants || []).map(async (plant, index) => {
-                console.log(`📤 Processing plant ${index + 1}:`, {
-                    id: plant.plant_id,
-                    plant: plant.plant,
-                    hasFile: !!plant.fichier_accord,
-                    hasFileUrl: !!plant.fichier_accord_url,
-                    fileObject: plant.fichier_accord instanceof File
-                });
+                console.log(`\n📤 ========== PROCESSING PLANT ${index + 1}/${unit.plants.length} ==========`);
+                console.log('🔍 RAW PLANT OBJECT:', plant);
+                console.log('Plant ID:', plant.plant_id || 'NEW');
+                console.log('Plant Name:', plant.plant);
+
+                // CHECK EVERY PROPERTY
+                console.log('\n🔬 DETAILED FILE CHECK:');
+                console.log('  plant.fichier_accord:', plant.fichier_accord);
+                console.log('  typeof plant.fichier_accord:', typeof plant.fichier_accord);
+                console.log('  plant.fichier_accord instanceof File:', plant.fichier_accord instanceof File);
+                console.log('  plant.fichier_accord_url:', plant.fichier_accord_url);
+
+                if (plant.fichier_accord) {
+                    console.log('  fichier_accord properties:', {
+                        name: plant.fichier_accord.name,
+                        size: plant.fichier_accord.size,
+                        type: plant.fichier_accord.type,
+                        lastModified: plant.fichier_accord.lastModified
+                    });
+                }
 
                 const formData = new FormData();
                 formData.append('unit_id', unitId.toString());
@@ -963,34 +1004,49 @@ const SupplierManagement = () => {
                 formData.append('place_of_incoterms', plant.place_of_incoterms || '');
 
                 // Handle file logic
+                console.log('\n📎 FILE APPEND LOGIC:');
                 if (plant.fichier_accord && plant.fichier_accord instanceof File) {
-                    // New file uploaded
-                    console.log('📤 Uploading new fichier_accord:', plant.fichier_accord.name);
+                    console.log('✅ CONDITION MET: Appending file to FormData');
+                    console.log('   File being appended:', plant.fichier_accord);
                     formData.append('fichier_accord', plant.fichier_accord);
-                } else if (plant.fichier_accord_url && !plant.fichier_accord) {
-                    // Keep existing file from database
-                    console.log('🔗 Keeping existing fichier_accord from DB');
-                    // We need to tell the backend to keep the existing file
-                    // This requires backend support
-                } else if (!plant.fichier_accord_url && !plant.fichier_accord) {
-                    // No file at all
-                    console.log('📭 No file for this plant');
+                    formData.append('keepExistingFile', 'false');
+                    console.log('   ✓ File appended successfully');
+                } else if (plant.fichier_accord_url) {
+                    console.log('🔗 CONDITION MET: Keeping existing file');
+                    formData.append('keepExistingFile', 'true');
+                } else {
+                    console.log('📭 CONDITION MET: No file');
+                    formData.append('keepExistingFile', 'false');
+                }
+
+                // Log FormData contents
+                console.log('\n📦 FORMDATA CONTENTS:');
+                let hasFile = false;
+                for (let pair of formData.entries()) {
+                    if (pair[1] instanceof File) {
+                        console.log(`   ✓✓✓ ${pair[0]}: File(${pair[1].name}, ${pair[1].size} bytes, ${pair[1].type})`);
+                        hasFile = true;
+                    } else {
+                        console.log(`   - ${pair[0]}: ${pair[1]}`);
+                    }
+                }
+
+                if (!hasFile) {
+                    console.error('❌❌❌ NO FILE IN FORMDATA! This is the problem!');
                 }
 
                 let response;
                 let url;
 
                 if (plant.plant_id) {
-                    // Update existing plant
-                    console.log(`🔄 Updating plant ${plant.plant_id}`);
+                    console.log(`\n🔄 Updating plant ${plant.plant_id}...`);
                     url = `https://supplier-back.azurewebsites.net/ajouter/api/plants/${plant.plant_id}`;
                     response = await fetch(url, {
                         method: 'PUT',
                         body: formData,
                     });
                 } else {
-                    // Create new plant
-                    console.log('➕ Creating new plant');
+                    console.log('\n➕ Creating new plant...');
                     url = 'https://supplier-back.azurewebsites.net/ajouter/api/plants';
                     response = await fetch(url, {
                         method: 'POST',
@@ -998,32 +1054,30 @@ const SupplierManagement = () => {
                     });
                 }
 
+                console.log('📡 Response:', response.status, response.statusText);
+
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error('❌ Plant request failed:', {
-                        status: response.status,
-                        statusText: response.statusText,
-                        error: errorText,
-                        url: url
-                    });
+                    console.error('❌ REQUEST FAILED:', errorText);
                     throw new Error(`Failed to ${plant.plant_id ? 'update' : 'create'} plant`);
                 }
 
                 const result = await response.json();
-                console.log('✅ Plant saved:', result);
+                console.log('✅ Plant saved:');
+                console.log('   fichier_accord in DB:', result.fichier_accord || 'NULL ❌');
+                console.log('========== END PLANT ==========\n');
+
                 return result;
             });
 
-            // Wait for all operations to complete
             await Promise.all([...deletePromises, ...updatePromises]);
-            console.log('✅ All plant operations completed');
+            console.log('✅ ALL OPERATIONS COMPLETED\n');
 
         } catch (error) {
-            console.error('❌ Error handling plants:', error);
+            console.error('❌ ERROR:', error);
             throw error;
         }
     };
-
     // Helper function to handle certificates data
     const handleUnitCertificates = async (unit, unitId) => {
         try {
@@ -1587,7 +1641,6 @@ const CompleteCustomerModal = ({
     onRemovePlant,
     onPlantChange
 }) => {
-
 
     useEffect(() => {
         console.log('🔍 Modal data received:', data);
@@ -2516,10 +2569,17 @@ const CompleteCustomerModal = ({
                                                     id={`fichier_accord_${unitIndex}_${plantIndex}`}
                                                     onChange={(e) => {
                                                         const file = e.target.files[0];
-                                                        console.log('📎 File selected for plant:', file);
+                                                        console.log('📎 FILE SELECTED:', file);
+                                                        console.log('   Name:', file?.name);
+                                                        console.log('   Size:', file?.size);
+                                                        console.log('   Type:', file?.type);
+
                                                         if (file) {
-                                                            // Pass empty string as value, and file as the file parameter
+                                                            // Call with empty string as value, file as the file parameter
                                                             onPlantChange(unitIndex, plantIndex, 'fichier_accord', '', file);
+                                                        } else {
+                                                            // No file selected
+                                                            onPlantChange(unitIndex, plantIndex, 'fichier_accord', '', null);
                                                         }
                                                     }}
                                                     className="file-input"
