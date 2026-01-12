@@ -170,11 +170,13 @@ const SupplierManagement = () => {
     const [error, setError] = useState(null);
     const [formData, setFormData] = useState({
         supplier_name: '',
+        responsible_group: '',
         description: ''
     });
     const [completeCustomerData, setCompleteCustomerData] = useState({
         group: {
             supplier_name: '',
+            responsible_group: '',
             description: ''
         },
         units: []
@@ -362,6 +364,8 @@ const SupplierManagement = () => {
 
     // Plant Functions (Separate Table)
     const handlePlantChange = (unitIndex, plantIndex, field, value, file = null) => {
+        console.log('🔧 handlePlantChange called:', { unitIndex, plantIndex, field, value, file });
+
         setCompleteCustomerData(prev => {
             const updated = JSON.parse(JSON.stringify(prev));
 
@@ -386,8 +390,12 @@ const SupplierManagement = () => {
             }
 
             if (field === 'fichier_accord') {
+                console.log('📎 Setting file:', file);
                 updated.units[unitIndex].plants[plantIndex].fichier_accord = file;
                 updated.units[unitIndex].plants[plantIndex].file_name = file ? file.name : null;
+
+                // Log what we just set
+                console.log('✅ Plant after setting file:', updated.units[unitIndex].plants[plantIndex]);
             } else {
                 const dbFieldName = field === 'place_of_incoterms' ? 'place_of_incoterms' : field;
                 updated.units[unitIndex].plants[plantIndex][dbFieldName] = value;
@@ -396,7 +404,6 @@ const SupplierManagement = () => {
             return updated;
         });
     };
-
     const addPlant = (unitIndex) => {
         setCompleteCustomerData(prev => {
             const updated = JSON.parse(JSON.stringify(prev));
@@ -441,6 +448,7 @@ const SupplierManagement = () => {
         setCompleteCustomerData({
             group: {
                 supplier_name: '',
+                responsible_group: '',
                 description: ''
             },
             units: []
@@ -453,6 +461,7 @@ const SupplierManagement = () => {
         setSelectedGroup(group);
         setFormData({
             supplier_name: group.supplier_name,
+            responsible_group: group.responsible_group,
             description: group.description || ''
         });
         setFormErrors({});
@@ -612,6 +621,7 @@ const SupplierManagement = () => {
             const newCompleteCustomerData = {
                 group: {
                     supplier_name: customerData.supplier_name,
+                    responsible_group: customerData.responsible_group,
                     description: customerData.description || ''
                 },
                 units: unitsWithPlants
@@ -904,6 +914,7 @@ const SupplierManagement = () => {
     };
 
     // Helper function to handle plants data
+    // Helper function to handle plants data - UPDATED VERSION
     const handleUnitPlants = async (unit, unitId) => {
         try {
             console.log('🌱 Handling plants for unit:', unit.unit_name, 'ID:', unitId);
@@ -938,6 +949,7 @@ const SupplierManagement = () => {
                     id: plant.plant_id,
                     plant: plant.plant,
                     hasFile: !!plant.fichier_accord,
+                    hasFileUrl: !!plant.fichier_accord_url,
                     fileObject: plant.fichier_accord instanceof File
                 });
 
@@ -950,12 +962,19 @@ const SupplierManagement = () => {
                 formData.append('incoterms', plant.incoterms || '');
                 formData.append('place_of_incoterms', plant.place_of_incoterms || '');
 
+                // Handle file logic
                 if (plant.fichier_accord && plant.fichier_accord instanceof File) {
-                    console.log('📤 Uploading fichier_accord:', plant.fichier_accord.name);
+                    // New file uploaded
+                    console.log('📤 Uploading new fichier_accord:', plant.fichier_accord.name);
                     formData.append('fichier_accord', plant.fichier_accord);
                 } else if (plant.fichier_accord_url && !plant.fichier_accord) {
-                    formData.append('keepExistingFile', 'true');
-                    console.log('🔗 Keeping existing fichier_accord:', plant.fichier_accord_url);
+                    // Keep existing file from database
+                    console.log('🔗 Keeping existing fichier_accord from DB');
+                    // We need to tell the backend to keep the existing file
+                    // This requires backend support
+                } else if (!plant.fichier_accord_url && !plant.fichier_accord) {
+                    // No file at all
+                    console.log('📭 No file for this plant');
                 }
 
                 let response;
@@ -1651,7 +1670,7 @@ const CompleteCustomerModal = ({
                         </h3>
                         <div className="form-group">
                             <label htmlFor="group_name" className="form-label">
-                                Supplier Name *
+                                Supplier Name
                             </label>
                             <input
                                 type="text"
@@ -1663,6 +1682,23 @@ const CompleteCustomerModal = ({
                             />
                             {formErrors.group_name && (
                                 <span className="error-message">{formErrors.group_name}</span>
+                            )}
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="group_name" className="form-label">
+                                Responsible
+                            </label>
+                            <input
+                                type="text"
+                                id="responsible_group"
+                                value={data.group.responsible_group}
+                                onChange={(e) => onGroupChange('group.responsible_group', e.target.value)}
+                                className={`form-input ${formErrors.responsible_group ? 'error' : ''}`}
+                                placeholder="Enter supplier name"
+                            />
+                            {formErrors.responsible_group && (
+                                <span className="error-message">{formErrors.responsible_group}</span>
                             )}
                         </div>
 
@@ -2316,168 +2352,6 @@ const CompleteCustomerModal = ({
                                     </div>
                                 </div>
 
-                                <div className="form-row">
-                                    <div className="form-group">
-                                        <label htmlFor={`terms_purshase_${unitIndex}`} className="form-label">
-                                            Terms of Purchase
-                                        </label>
-                                        <input
-                                            type="text"
-                                            id={`terms_purshase_${unitIndex}`}
-                                            value={unit.terms_purshase || ''}
-                                            onChange={(e) => onUnitChange(unitIndex, 'terms_purshase', e.target.value)}
-                                            className="form-input"
-                                            placeholder="Terms of purchase"
-                                        />
-                                    </div>
-                                    <div className="form-group">
-                                        <label htmlFor={`payment_conditions_${unitIndex}`} className="form-label">
-                                            Payment Conditions
-                                        </label>
-                                        <input
-                                            type="text"
-                                            id={`payment_conditions_${unitIndex}`}
-                                            value={unit.payment_conditions || ''}
-                                            onChange={(e) => onUnitChange(unitIndex, 'payment_conditions', e.target.value)}
-                                            className="form-input"
-                                            placeholder="Payment conditions"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="form-group">
-                                    <label htmlFor={`tech_key_account_${unitIndex}`} className="form-label">
-                                        Tech Key Account
-                                    </label>
-                                    <input
-                                        type="text"
-                                        id={`tech_key_account_${unitIndex}`}
-                                        value={unit.tech_key_account || ''}
-                                        onChange={(e) => onUnitChange(unitIndex, 'tech_key_account', e.target.value)}
-                                        className="form-input"
-                                        placeholder="Tech key account"
-                                    />
-                                </div>
-
-                                {/* Responsible Person Section */}
-                                <div className="section-subheader">
-                                    <h5><i className="fas fa-user-tie"></i> Responsible Person</h5>
-                                </div>
-
-                                <div className="form-group">
-                                    <label htmlFor={`responsible_person_${unitIndex}`} className="form-label">
-                                        Select Responsible Person
-                                    </label>
-                                    <select
-                                        id={`responsible_person_${unitIndex}`}
-                                        value={unit.responsible?.Person_id || ''}
-                                        onChange={(e) => handlePersonChange(unitIndex, e.target.value)}
-                                        className="form-input"
-                                    >
-                                        <option value="">-- Select a person --</option>
-                                        {loadingPersons ? (
-                                            <option value="" disabled>Loading persons...</option>
-                                        ) : persons.length > 0 ? (
-                                            persons.map((person) => (
-                                                <option key={person.Person_id} value={person.Person_id}>
-                                                    {person.first_name} {person.last_name}
-                                                    {person.job_title ? ` - ${person.job_title}` : ''}
-                                                </option>
-                                            ))
-                                        ) : (
-                                            <option value="" disabled>No persons found</option>
-                                        )}
-                                    </select>
-                                </div>
-
-                                {/* Additional Information Section */}
-                                <div className="section-subheader">
-                                    <h5><i className="fas fa-info-circle"></i> Additional Information</h5>
-                                </div>
-
-                                <div className="form-row">
-                                    <div className="form-group">
-                                        <label htmlFor={`plant_${unitIndex}`} className="form-label">
-                                            Plant
-                                        </label>
-                                        <select
-                                            id={`plant_${unitIndex}`}
-                                            value={unit.plant || ''}
-                                            onChange={(e) => onUnitChange(unitIndex, 'plant', e.target.value)}
-                                            className="form-input"
-                                        >
-                                            <option value="">Select plant</option>
-                                            <option value="Sceet">Sceet</option>
-                                            <option value="Same">Same</option>
-                                            <option value="Kunshan">Kunshan</option>
-                                            <option value="Anhui">Anhui</option>
-                                            <option value="Tianjin">Tianjin</option>
-                                            <option value="Monterrey">Monterrey</option>
-                                            <option value="India">India</option>
-                                            <option value="Poitiers">Poitiers</option>
-                                            <option value="Cyclam">Cyclam</option>
-                                            <option value="Frankfurt">Frankfurt</option>
-                                            <option value="Korea">Korea</option>
-                                        </select>
-                                    </div>
-                                    <div className="form-group">
-                                        <label htmlFor={`top_${unitIndex}`} className="form-label">
-                                            TOP (Terms of Payment)
-                                        </label>
-                                        <select
-                                            id={`top_${unitIndex}`}
-                                            value={unit.top || ''}
-                                            onChange={(e) => onUnitChange(unitIndex, 'top', e.target.value)}
-                                            className="form-input"
-                                        >
-                                            <option value="">Select TOP</option>
-                                            <option value="30 days end of month or +">30 days end of month or +</option>
-                                            <option value="30 days net">30 days net</option>
-                                            <option value="60 days net">60 days net</option>
-                                            <option value="15 days net">15 days net</option>
-                                            <option value="60 days eom or +">60 days eom or +</option>
-                                            <option value="Cash in Advance">Cash in Advance</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="form-row">
-                                    <div className="form-group">
-                                        <label htmlFor={`status_${unitIndex}`} className="form-label">
-                                            Status
-                                        </label>
-                                        <select
-                                            id={`status_${unitIndex}`}
-                                            value={unit.status || ''}
-                                            onChange={(e) => onUnitChange(unitIndex, 'status', e.target.value)}
-                                            className="form-input"
-                                        >
-                                            <option value="">Select status</option>
-                                            <option value="Active">Active</option>
-                                            <option value="Inactive">Inactive</option>
-                                            <option value="Pending">Pending</option>
-                                            <option value="Suspended">Suspended</option>
-                                        </select>
-                                    </div>
-                                    <div className="form-group">
-                                        <label htmlFor={`category_${unitIndex}`} className="form-label">
-                                            Category
-                                        </label>
-                                        <select
-                                            id={`category_${unitIndex}`}
-                                            value={unit.category || ''}
-                                            onChange={(e) => onUnitChange(unitIndex, 'category', e.target.value)}
-                                            className="form-input"
-                                        >
-                                            <option value="">Select category</option>
-                                            <option value="Manufacturing">Manufacturing</option>
-                                            <option value="Service">Service</option>
-                                            <option value="Retail">Retail</option>
-                                            <option value="Wholesale">Wholesale</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                    </div>
-                                </div>
 
                                 {/* Plants to Deliver Section (Separate Table) */}
                                 <div className="section-subheader">
@@ -2497,8 +2371,8 @@ const CompleteCustomerModal = ({
                                             position: 'relative',
                                             overflow: 'hidden',
                                             color: '#6366f1',
-                                            fontSize:'22px',
-                                      
+                                            fontSize: '22px',
+
                                         }}>
                                             <i className="fas fa-truck-loading" style={{
                                                 color: '#6366f1',
@@ -2554,7 +2428,7 @@ const CompleteCustomerModal = ({
                                             <h6>
                                                 <i className="fas fa-industry"></i>
                                                 Plant {plantIndex + 1}
-                                                {plant.plant_id && <span className="plant-id-badge"> (ID: {plant.plant_id})</span>}
+
                                             </h6>
                                             <button
                                                 type="button"
@@ -2569,7 +2443,7 @@ const CompleteCustomerModal = ({
                                         <div className="form-row">
                                             <div className="form-group">
                                                 <label htmlFor={`plant_name_${unitIndex}_${plantIndex}`} className="form-label">
-                                                    Plant Name 
+                                                    Plant Name
                                                 </label>
                                                 <select
                                                     id={`plant_name_${unitIndex}_${plantIndex}`}
@@ -2652,20 +2526,14 @@ const CompleteCustomerModal = ({
                                                     className="form-input"
                                                 >
                                                     <option value="">Select incoterms</option>
-                                                    <option value="EXW">EXW (Ex Works)</option>
-                                                    <option value="FCA">FCA (Free Carrier)</option>
-                                                    <option value="FAS">FAS (Free Alongside Ship)</option>
-                                                    <option value="FOB">FOB (Free On Board)</option>
-                                                    <option value="CFR">CFR (Cost and Freight)</option>
-                                                    <option value="CIF">CIF (Cost, Insurance and Freight)</option>
-                                                    <option value="CPT">CPT (Carriage Paid To)</option>
-                                                    <option value="CIP">CIP (Carriage and Insurance Paid To)</option>
-                                                    <option value="DAP">DAP (Delivered At Place)</option>
-                                                    <option value="DPU">DPU (Delivered at Place Unloaded)</option>
-                                                    <option value="DDP">DDP (Delivered Duty Paid)</option>
+                                                    <option value="cashinadvance">Cash in advance</option>
+                                                    <option value="15daysnet">15 days net</option>
+                                                    <option value="30daysnet">30 days net</option>
+                                                    <option value="15endofthemonth">15 end of the month or +</option>
+                                                    <option value="30endofthemonth">30 end of the month or +</option>
+                                                    <option value="30endofthemonth">60 end of the month or +</option>
                                                 </select>
                                             </div>
-
                                             <div className="form-group">
                                                 <label htmlFor={`place_of_incoterms_${unitIndex}_${plantIndex}`} className="form-label">
                                                     Place of Incoterms
@@ -2692,8 +2560,10 @@ const CompleteCustomerModal = ({
                                                     id={`fichier_accord_${unitIndex}_${plantIndex}`}
                                                     onChange={(e) => {
                                                         const file = e.target.files[0];
+                                                        console.log('📎 File selected for plant:', file);
                                                         if (file) {
-                                                            onPlantChange(unitIndex, plantIndex, 'fichier_accord', null, file);
+                                                            // Pass empty string as value, and file as the file parameter
+                                                            onPlantChange(unitIndex, plantIndex, 'fichier_accord', '', file);
                                                         }
                                                     }}
                                                     className="file-input"
@@ -2938,7 +2808,7 @@ const CompleteCustomerModal = ({
 // Customer Card Component
 const CustomerCard = ({ customer, onUnitClick, onEditGroupClick, onEditCompleteClick, onDeleteClick, onPlantClick }) => {
     const fallbackCategory = customer.description?.toLowerCase().includes('automobile') ? 'automobile' : 'industry';
-    const { clearbitUrl, googleFaviconUrl, genericFallback } = getCompanyLogo(customer.supplier_name, fallbackCategory);
+    const { clearbitUrl, googleFaviconUrl, genericFallback } = getCompanyLogo(customer.supplier_name, customer.responsible_group, fallbackCategory);
 
     const [unitSearchTerm, setUnitSearchTerm] = useState('');
 
@@ -2982,6 +2852,9 @@ const CustomerCard = ({ customer, onUnitClick, onEditGroupClick, onEditCompleteC
                             </button>
                         </div>
                     </div>
+                    {customer.responsible_group && (
+                        <p className="customer-responsible_group">{customer.responsible_group}</p>
+                    )}
 
                     {customer.description && (
                         <p className="customer-description">{customer.description}</p>
@@ -3061,6 +2934,25 @@ const GroupModal = ({ group, formData, formErrors, onInputChange, onSubmit, onCl
                             <span className="error-message">{formErrors.supplier_name}</span>
                         )}
                     </div>
+
+                    <div className="form-group">
+                        <label htmlFor="responsible_group" className="form-label">
+                            Responsible
+                        </label>
+                        <input
+                            type="text"
+                            id="responsible_group"
+                            name="responsible_group"
+                            value={formData.responsible_group}
+                            onChange={onInputChange}
+                            className={`form-input ${formErrors.responsible_group ? 'error' : ''}`}
+                            placeholder="Enter Responsible"
+                        />
+                        {formErrors.responsible_group && (
+                            <span className="error-message">{formErrors.responsible_group}</span>
+                        )}
+                    </div>
+
 
                     <div className="form-group">
                         <label htmlFor="description" className="form-label">
@@ -3390,7 +3282,7 @@ const UnitModal = ({ unit, onClose }) => {
                                             <i className="fas fa-industry"></i>
                                             <span className="plant-name">{plant.plant}</span>
                                             {plant.alias && <span className="plant-alias">({plant.alias})</span>}
-                                            {plant.plant_id && <span className="plant-id-badge">ID: {plant.plant_id}</span>}
+
                                         </div>
                                         <div className="plant-details">
                                             <DetailItem label="Acheteur AVO" value={plant.Acheteur_avo} />
@@ -3495,50 +3387,10 @@ const UnitModal = ({ unit, onClose }) => {
                             <DetailItem label="Confidentiality Agreement" value={unit.confidentiality_agreement ? 'Yes' : 'No'} />
                             <DetailItem label="Quality Agreement" value={unit.quality_agreement ? 'Yes' : 'No'} />
                             <DetailItem label="Logistics Agreement" value={unit.logistics_agreement ? 'Yes' : 'No'} />
-                            <DetailItem label="Terms of Purchase" value={unit.terms_purshase ? 'Yes' : 'No'} />
-                            <DetailItem label="Payment Conditions" value={unit.payment_conditions} />
-                            <DetailItem label="Tech Key Account" value={unit.tech_key_account} />
+
                         </div>
                     </div>
 
-                    {/* Additional Information Section */}
-                    <div className="detail-section">
-                        <h3>
-                            <i className="fas fa-info-circle"></i> Additional Information
-                        </h3>
-                        <div className="detail-grid">
-                            <DetailItem label="Plant" value={unit.plant} />
-                            <DetailItem label="TOP" value={unit.top} />
-                            <DetailItem label="Status" value={unit.status} />
-                            <DetailItem label="Category" value={unit.category} />
-                            <DetailItem label="Responsible (Text)" value={unit.responsible_text} />
-
-                            {/* Document File */}
-                            {unit.document_file && (
-                                <div className="detail-item">
-                                    <div className="detail-label">
-                                        <i className="fas fa-file"></i>
-                                        Document File
-                                    </div>
-                                    <div className="detail-value">
-                                        <div className="file-preview-container">
-                                            <a
-                                                href={getFileUrl(unit.document_file)}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="file-link"
-                                            >
-                                                <i className="fas fa-download"></i> Download Document
-                                            </a>
-                                            <span className="file-name">
-                                                {getFileName(unit.document_file)}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
 
 
 
