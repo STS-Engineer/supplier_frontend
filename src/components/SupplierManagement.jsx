@@ -3500,7 +3500,7 @@ const UnitModal = ({ unit, onClose }) => {
                             <div className="certificates-grid">
                                 {unit.certificates.map((cert) => {
                                     const fileUrl = cert.file_url;
-                                    const fileName = cert.file_name || 'Certificate';
+                                  
 
                                     return (
                                         <div key={cert.certificat_id || cert.Type} className="certificate-card">
