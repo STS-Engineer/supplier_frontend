@@ -1587,7 +1587,7 @@ const CompleteCustomerModal = ({
     onRemovePlant,
     onPlantChange
 }) => {
-    const [persons, setPersons] = useState([]);
+
 
     useEffect(() => {
         console.log('🔍 Modal data received:', data);
