@@ -132,9 +132,7 @@ const PlantTree = ({ plant, onClose }) => {
                                     <a href={getFileUrl(plant.fichier_accord)} target="_blank" rel="noopener noreferrer">
                                         <i className="fas fa-eye"></i> View File
                                     </a>
-                                    <a href={getFileUrl(plant.fichier_accord)} download>
-                                        <i className="fas fa-download"></i> Download
-                                    </a>
+                           
                                 </div>
                             </div>
                         )}
@@ -2868,13 +2866,64 @@ const CustomerCard = ({ customer, onUnitClick, onEditGroupClick, onEditCompleteC
                             </button>
                         </div>
                     </div>
-                    {customer.responsible_group && (
-                        <p className="customer-responsible_group">{customer.responsible_group}</p>
-                    )}
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 1fr', // Two equal columns
+                        gap: '1rem',
+                        marginTop: '0.75rem',
+                        flexWrap: 'wrap' // Wraps to next line on smaller screens
+                    }}>
+                        {customer.responsible_group && (
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                padding: '0.5rem 0.75rem',
+                                backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                borderRadius: '8px',
+                                borderLeft: '3px solid #6366f1'
+                            }}>
+                                <i className="fas fa-user-tie" style={{
+                                    color: '#ffffff',
+                                    fontSize: '0.9rem'
+                                }}></i>
+                                <p style={{
+                                    margin: 0,
+                                    fontSize: '0.875rem',
+                                    color: '#ffffff',
+                                    fontWeight: '500'
+                                }}>
+                                    {customer.responsible_group}
+                                </p>
+                            </div>
+                        )}
 
-                    {customer.description && (
-                        <p className="customer-description">{customer.description}</p>
-                    )}
+                        {customer.description && (
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: '0.5rem',
+                                padding: '0.5rem 0.75rem',
+                                backgroundColor: 'rgba(156, 163, 175, 0.1)',
+                                borderRadius: '8px',
+                                borderLeft: '3px solid #9ca3af'
+                            }}>
+                                <i className="fas fa-info-circle" style={{
+                                    color: '#ffffff',
+                                    fontSize: '0.9rem',
+                                    marginTop: '0.15rem'
+                                }}></i>
+                                <p style={{
+                                    margin: 0,
+                                    fontSize: '0.875rem',
+                                    color: '#ffffff',
+                                    lineHeight: '1.5'
+                                }}>
+                                    {customer.description}
+                                </p>
+                            </div>
+                        )}
+                    </div>
 
                     <div className="input-wrapper">
                         <input
@@ -3490,9 +3539,7 @@ const UnitModal = ({ unit, onClose }) => {
                                                             <a href={getFileUrl(cert.file_url)} target="_blank" rel="noopener noreferrer">
                                                                 View
                                                             </a>
-                                                            <a href={getFileUrl(cert.file_url)} download={fileName}>
-                                                                Download
-                                                            </a>
+                                                      
                                                         </div>
                                                     </div>
                                                 )}
