@@ -2295,19 +2295,7 @@ const CompleteCustomerModal = ({
                                     </div>
                                 </div>
 
-                                <div className="form-group checkbox-group">
-                                    <label className="checkbox-label">
-                                        <input
-                                            type="checkbox"
-                                            id={`copy_billing_${unitIndex}`}
-                                            checked={unit.copy_billing || false}
-                                            onChange={(e) => onUnitChange(unitIndex, 'copy_billing', e.target.checked)}
-                                            className="checkbox-input"
-                                        />
-                                        <span className="checkbox-custom"></span>
-                                        Copy Billing to Shipping
-                                    </label>
-                                </div>
+                          
 
                                 {/* Agreements Section */}
                                 <div className="section-subheader">
@@ -3440,7 +3428,7 @@ const UnitModal = ({ unit, onClose }) => {
                                 <DetailItem label="Shipping Country" value={unit.shipping_country} />
                             </div>
                         </div>
-                        <DetailItem label="Copy Billing to Shipping" value={unit.copy_billing ? 'Yes' : 'No'} />
+                      
                     </div>
 
                     {/* Agreements Section */}
@@ -3500,8 +3488,7 @@ const UnitModal = ({ unit, onClose }) => {
                             <div className="certificates-grid">
                                 {unit.certificates.map((cert) => {
                                     const fileUrl = cert.file_url;
-                                  
-
+                                 
                                     return (
                                         <div key={cert.certificat_id || cert.Type} className="certificate-card">
                                             <div className="certificate-header">
