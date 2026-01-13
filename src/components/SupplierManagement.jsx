@@ -56,11 +56,8 @@ const PlantTree = ({ plant, onClose }) => {
                             <i className="fas fa-industry"></i>
                         </div>
                         <div className="plant-tree-title">
-                            <h3>{formattedPlantName} {plant.alias && `(${plant.alias})`}</h3>
-                            <div className="plant-tree-subtitle">
-                                <span className="plant-type">({plantType})</span>
-                                {plant.plant_id && <span style={{ marginLeft: '10px', color: '#a0aec0' }}>ID: {plant.plant_id}</span>}
-                            </div>
+                            <h3>{formattedPlantName} </h3>
+
                         </div>
                     </div>
                 </div>
@@ -72,7 +69,7 @@ const PlantTree = ({ plant, onClose }) => {
                             <div className="plant-info-item">
                                 <div className="plant-info-label">
                                     <i className="fas fa-user"></i>
-                                    Acheteur AVO
+                                    AVO Purchasing Manager
                                 </div>
                                 <div className="plant-info-value">
                                     {plant.Acheteur_avo || 'Not specified'}
@@ -126,7 +123,7 @@ const PlantTree = ({ plant, onClose }) => {
                             <div className="plant-file-preview">
                                 <h4>
                                     <i className="fas fa-file-contract"></i>
-                                    Fichier d'Accord
+                                    Approval Document
                                 </h4>
                                 <div className="file-preview-actions">
                                     <a href={getFileUrl(plant.fichier_accord)} target="_blank" rel="noopener noreferrer">
@@ -148,6 +145,81 @@ const PlantTree = ({ plant, onClose }) => {
                         </div>
                     </div>
                 )}
+            </div>
+        </div>
+    );
+};
+//paggination 
+// Pagination Component
+const Pagination = ({ currentPage, totalPages, onPageChange, totalItems, itemsPerPage }) => {
+    const getPageNumbers = () => {
+        const pages = [];
+        const maxVisible = 5;
+
+        if (totalPages <= maxVisible) {
+            for (let i = 1; i <= totalPages; i++) {
+                pages.push(i);
+            }
+        } else {
+            if (currentPage <= 3) {
+                for (let i = 1; i <= 4; i++) pages.push(i);
+                pages.push('...');
+                pages.push(totalPages);
+            } else if (currentPage >= totalPages - 2) {
+                pages.push(1);
+                pages.push('...');
+                for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+            } else {
+                pages.push(1);
+                pages.push('...');
+                for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+                pages.push('...');
+                pages.push(totalPages);
+            }
+        }
+
+        return pages;
+    };
+
+
+
+    if (totalPages === 0) return null;
+
+    return (
+        <div className="pagination-container">
+
+            <div className="pagination-controls">
+                <button
+                    className="pagination-btn"
+                    onClick={() => onPageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    title="Previous page"
+                >
+                    <i className="fas fa-chevron-left"></i>
+                </button>
+
+                {getPageNumbers().map((page, index) => (
+                    page === '...' ? (
+                        <span key={`ellipsis-${index}`} className="pagination-ellipsis">...</span>
+                    ) : (
+                        <button
+                            key={page}
+                            className={`pagination-number ${currentPage === page ? 'active' : ''}`}
+                            onClick={() => onPageChange(page)}
+                        >
+                            {page}
+                        </button>
+                    )
+                ))}
+
+                <button
+                    className="pagination-btn"
+                    onClick={() => onPageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    title="Next page"
+                >
+                    <i className="fas fa-chevron-right"></i>
+                </button>
             </div>
         </div>
     );
@@ -183,10 +255,18 @@ const SupplierManagement = () => {
     const [editingCustomer, setEditingCustomer] = useState(null);
     const [selectedPlant, setSelectedPlant] = useState(null);
     const [isPlantModalOpen, setIsPlantModalOpen] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(6);
+
     useEffect(() => {
         fetchCustomers();
     }, []);
 
+    // Add this after your other useEffects
+    useEffect(() => {
+        // Force reset to page 1 when component first mounts
+        setCurrentPage(1);
+    }, []); // Empty dependency array = runs once on mount
     useEffect(() => {
         if (searchTerm.trim() === '') {
             setFilteredCustomers(customers);
@@ -196,6 +276,7 @@ const SupplierManagement = () => {
             );
             setFilteredCustomers(filtered);
         }
+        setCurrentPage(1); // Reset to first page when searching
     }, [searchTerm, customers]);
 
     const fetchCustomers = async () => {
@@ -274,6 +355,17 @@ const SupplierManagement = () => {
         }
     };
 
+
+    const handlePageChange = (page, newItemsPerPage) => {
+        if (newItemsPerPage) {
+            setItemsPerPage(newItemsPerPage);
+            setCurrentPage(1);
+        } else {
+            setCurrentPage(page);
+            // Scroll to top when changing pages
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
     // Debug: Log when modal opens with data
     useEffect(() => {
         if (isCompleteCustomerModalOpen && editingCustomer) {
@@ -283,6 +375,11 @@ const SupplierManagement = () => {
             });
         }
     }, [isCompleteCustomerModalOpen, completeCustomerData, editingCustomer]);
+
+    const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentCustomers = filteredCustomers.slice(startIndex, endIndex);
 
     // Certificate Functions
     const handleCertificateChange = (unitIndex, certIndex, field, value, file = null) => {
@@ -433,7 +530,6 @@ const SupplierManagement = () => {
                                 plant_id: null,
                                 plant: '',
                                 Acheteur_avo: '',
-                                alias: '',
                                 top: '',
                                 incoterms: '',
                                 place_of_incoterms: '',
@@ -484,9 +580,6 @@ const SupplierManagement = () => {
         setFormErrors({});
         setIsGroupModalOpen(true);
     };
-
-
-
 
     const openEditCompleteCustomerModal = async (customer) => {
         try {
@@ -612,7 +705,6 @@ const SupplierManagement = () => {
                             plant_id: plant.plant_id || null,
                             plant: plant.plant || '',
                             Acheteur_avo: plant.Acheteur_avo || '',
-                            alias: plant.alias || '',
                             top: plant.top || '',
                             incoterms: plant.incoterms || '',
                             place_of_incoterms: plant.place_of_incoterms || '',
@@ -730,9 +822,6 @@ const SupplierManagement = () => {
             return updated;
         });
     };
-
-
-
     // Function to handle plant click
     // Function to handle plant click - show tree structure
     const handlePlantClick = (plant) => {
@@ -823,19 +912,7 @@ const SupplierManagement = () => {
                     },
 
                     // Plants from separate table
-                    plants: [
-                        {
-                            plant_id: null,
-                            plant: '',
-                            Acheteur_avo: '',
-                            alias: '',
-                            top: '',
-                            incoterms: '',
-                            place_of_incoterms: '',
-                            fichier_accord: null,
-                            fichier_accord_url: null
-                        }
-                    ],
+                    plants: [],
 
                     certificates: []
                 }
@@ -999,7 +1076,6 @@ const SupplierManagement = () => {
                 formData.append('unit_id', unitId.toString());
                 formData.append('plant', plant.plant || '');
                 formData.append('Acheteur_avo', plant.Acheteur_avo || '');
-                formData.append('alias', plant.alias || '');
                 formData.append('top', plant.top || '');
                 formData.append('incoterms', plant.incoterms || '');
                 formData.append('place_of_incoterms', plant.place_of_incoterms || '');
@@ -1079,8 +1155,6 @@ const SupplierManagement = () => {
             throw error;
         }
     };
-
-
 
     // Helper function to handle certificates data
     const handleUnitCertificates = async (unit, unitId) => {
@@ -1437,6 +1511,8 @@ const SupplierManagement = () => {
         }
     };
 
+
+
     const handleDeleteGroup = async () => {
         if (!groupToDelete) return;
 
@@ -1524,9 +1600,27 @@ const SupplierManagement = () => {
             </header>
 
             {/* Main Content */}
+            {/* Main Content */}
             <main className="main-content">
+                {/* Add Pagination at the TOP */}
+                {filteredCustomers.length > 0 && (
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        marginBottom: '2rem'
+                    }}>
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={handlePageChange}
+                            totalItems={filteredCustomers.length}
+                            itemsPerPage={itemsPerPage}
+                        />
+                    </div>
+                )}
+
                 <div className="customers-grid">
-                    {filteredCustomers.map((customer) => (
+                    {currentCustomers.map((customer) => (
                         <CustomerCard
                             key={customer.supplier_id}
                             customer={customer}
@@ -1534,7 +1628,7 @@ const SupplierManagement = () => {
                             onEditGroupClick={openEditGroupModal}
                             onEditCompleteClick={openEditCompleteCustomerModal}
                             onDeleteClick={openDeleteGroupModal}
-                            onPlantClick={handlePlantClick}  // Add this
+                            onPlantClick={handlePlantClick}
                         />
                     ))}
                 </div>
@@ -1607,7 +1701,7 @@ const SupplierManagement = () => {
                         <div className="modal-header">
                             <div className="modal-title">
                                 <i className="fas fa-project-diagram"></i>
-                                <h2>Plant Tree Structure</h2>
+                                <h2>Plant to deliver</h2>
                             </div>
                             <button className="modal-close" onClick={closePlantModal}>
                                 <i className="fas fa-times"></i>
@@ -1630,13 +1724,11 @@ const CompleteCustomerModal = ({
     formErrors,
     onGroupChange,
     onUnitChange,
-    onResponsibleChange,
     onAddUnit,
     onRemoveUnit,
     onSubmit,
     onClose,
     isEditing = false,
-    // Certificate props
     onAddCertificate,
     onRemoveCertificate,
     onCertificateChange,
@@ -2472,7 +2564,7 @@ const CompleteCustomerModal = ({
 
                                             <div className="form-group">
                                                 <label htmlFor={`acheteur_avo_${unitIndex}_${plantIndex}`} className="form-label">
-                                                    Acheteur AVO
+                                                    AVO Purchasing Manager
                                                 </label>
                                                 <input
                                                     type="text"
@@ -2480,25 +2572,13 @@ const CompleteCustomerModal = ({
                                                     value={plant.Acheteur_avo || ''}
                                                     onChange={(e) => onPlantChange(unitIndex, plantIndex, 'Acheteur_avo', e.target.value)}
                                                     className="form-input"
-                                                    placeholder="Enter acheteur AVO"
+                                                    placeholder="Enter AVO Purchasing Manager"
                                                 />
                                             </div>
                                         </div>
 
                                         <div className="form-row">
-                                            <div className="form-group">
-                                                <label htmlFor={`alias_${unitIndex}_${plantIndex}`} className="form-label">
-                                                    Alias
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    id={`alias_${unitIndex}_${plantIndex}`}
-                                                    value={plant.alias || ''}
-                                                    onChange={(e) => onPlantChange(unitIndex, plantIndex, 'alias', e.target.value)}
-                                                    className="form-input"
-                                                    placeholder="Enter alias"
-                                                />
-                                            </div>
+
 
                                             <div className="form-group">
                                                 <label htmlFor={`plant_top_${unitIndex}_${plantIndex}`} className="form-label">
@@ -2527,12 +2607,12 @@ const CompleteCustomerModal = ({
                                                     className="form-input"
                                                 >
                                                     <option value="">Select incoterms</option>
-                                                    <option value="cashinadvance">Cash in advance</option>
-                                                    <option value="15daysnet">15 days net</option>
-                                                    <option value="30daysnet">30 days net</option>
-                                                    <option value="15endofthemonth">15 end of the month or +</option>
-                                                    <option value="30endofthemonth">30 end of the month or +</option>
-                                                    <option value="30endofthemonth">60 end of the month or +</option>
+                                                    <option value="Cash in advance">Cash in advance</option>
+                                                    <option value="15 days net">15 days net</option>
+                                                    <option value="30 days net">30 days net</option>
+                                                    <option value="15 end of themonth">15 end of the month or +</option>
+                                                    <option value="30 end of the month">30 end of the month or +</option>
+                                                    <option value="30 end of the month">60 end of the month or +</option>
                                                 </select>
                                             </div>
                                             <div className="form-group">
@@ -2550,10 +2630,10 @@ const CompleteCustomerModal = ({
                                             </div>
                                         </div>
 
-                                        {/* File Upload for Fichier d'Accord */}
+                                        {/* File Upload for Approval Document */}
                                         <div className="form-group">
                                             <label htmlFor={`fichier_accord_${unitIndex}_${plantIndex}`} className="form-label">
-                                                Fichier d'Accord
+                                               Approval Document
                                             </label>
                                             <div className="file-upload-container">
                                                 <input
@@ -2606,7 +2686,7 @@ const CompleteCustomerModal = ({
                                                     ) : (
                                                         <div className="file-upload-placeholder">
                                                             <i className="fas fa-cloud-upload-alt"></i>
-                                                            <span>Click to upload fichier d'accord (PDF, JPG, PNG, DOC)</span>
+                                                            <span>Click to upload Approval Document (PDF, JPG, PNG, DOC)</span>
                                                         </div>
                                                     )}
                                                 </div>
@@ -2647,7 +2727,7 @@ const CompleteCustomerModal = ({
                                                 <h6>
                                                     <i className="fas fa-file-certificate"></i>
                                                     Certificate {certIndex + 1}
-                                                    {cert.certificat_id && <span className="cert-id-badge"> (ID: {cert.certificat_id})</span>}
+
                                                 </h6>
                                                 <button
                                                     type="button"
@@ -2865,7 +2945,8 @@ const CustomerCard = ({ customer, onUnitClick, onEditGroupClick, onEditCompleteC
                         gridTemplateColumns: '1fr 1fr', // Two equal columns
                         gap: '1rem',
                         marginTop: '0.75rem',
-                        flexWrap: 'wrap' // Wraps to next line on smaller screens
+                        flexWrap: 'wrap', // Wraps to next line on smaller screens
+                        marginTop: '1rem'
                     }}>
                         {customer.responsible_group && (
                             <div style={{
@@ -2919,7 +3000,7 @@ const CustomerCard = ({ customer, onUnitClick, onEditGroupClick, onEditCompleteC
                         )}
                     </div>
 
-                    <div className="input-wrapper">
+                    <div className="input-wrapper" style={{ marginTop: '1rem' }}>
                         <input
                             type="text"
                             placeholder="Search units..."
@@ -3080,10 +3161,8 @@ const DeleteModal = ({ group, onConfirm, onClose }) => {
     );
 };
 
-
-
 // Update the UnitItem component
-const UnitItem = ({ unit,supplierName, onClick, onPlantClick }) => {
+const UnitItem = ({ unit, supplierName, onClick, onPlantClick }) => {
     const [showPlants, setShowPlants] = useState(false);
 
     const handleUnitClick = (e) => {
@@ -3101,6 +3180,27 @@ const UnitItem = ({ unit,supplierName, onClick, onPlantClick }) => {
         e.stopPropagation();
         e.preventDefault();
         onPlantClick(plant);
+    };
+
+    const getPlantType = (plantName) => {
+        const plantNameLower = plantName?.toLowerCase() || '';
+        if (plantNameLower.includes('sceet') || plantNameLower.includes('same') ||
+            plantNameLower.includes('anhui') || plantNameLower.includes('india') ||
+            plantNameLower.includes('korea')) {
+            return 'Manufacturing';
+        } else if (plantNameLower.includes('monterrey')) {
+            return 'Assembly';
+        } else if (plantNameLower.includes('kunshan') || plantNameLower.includes('tianjin')) {
+            return 'Production';
+        } else if (plantNameLower.includes('poitiers')) {
+            return 'R&D';
+        } else if (plantNameLower.includes('cyclam')) {
+            return 'Development';
+        } else if (plantNameLower.includes('frankfurt')) {
+            return 'Sales';
+        } else {
+            return 'Manufacturing';
+        }
     };
 
     const formatPlantName = (plantName) => {
@@ -3168,68 +3268,68 @@ const UnitItem = ({ unit,supplierName, onClick, onPlantClick }) => {
             </div>
 
             {/* Plants to deliver Tree Structure - using unit.plants array */}
-      
-    {showPlants && unit.plants && unit.plants.length > 0 && (
-        <div className="plants-tree-container">
-            <div className="plants-tree">
-                {/* Update the tree-header to include supplier name */}
-                <div className="tree-header">
-                    <i className="fas fa-industry"></i>
-                    <div className="tree-header-content">
-                        <div className="tree-title-section">
-                            <h5>Plants to deliver</h5>
-                            
-                        </div>
-                       
-                    </div>
-                </div>
-                
-                {/* Rest of your existing tree structure remains the same */}
-                <div className="tree-branches">
-                    <div className="tree-trunk"></div>
-                    <div className="tree-leaves">
-                        {unit.plants.map((plant, index) => {
-                            const formattedPlantName = formatPlantName(plant.plant);
-                    
 
-                            return (
-                                <div
-                                    key={`${plant.plant_id || index}`}
-                                    className="tree-leaf plant-clickable"
-                                    onClick={(e) => handlePlantClick(e, plant)}
-                                >
-                                    <div className="leaf-dot">
-                                        <i className="fas fa-industry"></i>
-                                    </div>
-                                    <div className="leaf-text">
-                                        <span className="plant-name">{supplierName} {formattedPlantName} </span>
-                                     
-                                        
-                                        {/* Show additional plant info if available */}
-                                        {plant.Acheteur_avo && (
-                                            <span className="plant-detail">
-                                                <i className="fas fa-user"></i> {plant.Acheteur_avo}
-                                            </span>
-                                        )}
+            {showPlants && unit.plants && unit.plants.length > 0 && (
+                <div className="plants-tree-container">
+                    <div className="plants-tree">
+                        {/* Update the tree-header to include supplier name */}
+                        <div className="tree-header">
+                            <i className="fas fa-industry"></i>
+                            <div className="tree-header-content">
+                                <div className="tree-title-section">
+                                    <h5>Plants to deliver</h5>
 
-                                        {/* Show delivery status if available */}
-                                        {plant.delivered !== undefined && (
-                                            <span className={`plant-status ${plant.delivered ? 'delivered' : 'pending'}`}>
-                                                {plant.delivered ? '✓ Delivered' : '⏱ Pending'}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <div className="leaf-connector"></div>
                                 </div>
-                            );
-                        })}
+
+                            </div>
+                        </div>
+
+                        {/* Rest of your existing tree structure remains the same */}
+                        <div className="tree-branches">
+                            <div className="tree-trunk"></div>
+                            <div className="tree-leaves">
+                                {unit.plants.map((plant, index) => {
+                                    const formattedPlantName = formatPlantName(plant.plant);
+
+
+                                    return (
+                                        <div
+                                            key={`${plant.plant_id || index}`}
+                                            className="tree-leaf plant-clickable"
+                                            onClick={(e) => handlePlantClick(e, plant)}
+                                        >
+                                            <div className="leaf-dot">
+                                                <i className="fas fa-industry"></i>
+                                            </div>
+                                            <div className="leaf-text">
+                                                <span className="plant-name">{supplierName} {formattedPlantName} </span>
+
+
+                                                {/* Show additional plant info if available */}
+                                                {plant.Acheteur_avo && (
+                                                    <span className="plant-detail">
+                                                        <i className="fas fa-user"></i> {plant.Acheteur_avo}
+                                                    </span>
+                                                )}
+
+                                                {/* Show delivery status if available */}
+                                                {plant.delivered !== undefined && (
+                                                    <span className={`plant-status ${plant.delivered ? 'delivered' : 'pending'}`}>
+                                                        {plant.delivered ? '✓ Delivered' : '⏱ Pending'}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="leaf-connector"></div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+
                     </div>
                 </div>
-
-             
-            </div>
-        </div>
-    )}
+            )}
 
             {showPlants && (!unit.plants || unit.plants.length === 0) && (
                 <div className="no-plants-message">
@@ -3304,11 +3404,11 @@ const UnitModal = ({ unit, onClose }) => {
                                         <div className="plant-header">
                                             <i className="fas fa-industry"></i>
                                             <span className="plant-name">{plant.plant}</span>
-                                            {plant.alias && <span className="plant-alias">({plant.alias})</span>}
+
 
                                         </div>
                                         <div className="plant-details">
-                                            <DetailItem label="Acheteur AVO" value={plant.Acheteur_avo} />
+                                            <DetailItem label="AVO Purchasing Manager" value={plant.Acheteur_avo} />
                                             <DetailItem label="TOP" value={plant.top} />
                                             <DetailItem label="Incoterms" value={plant.incoterms} />
                                             <DetailItem label="Place of Incoterms" value={plant.place_of_incoterms} />
@@ -3320,7 +3420,7 @@ const UnitModal = ({ unit, onClose }) => {
                                                         rel="noopener noreferrer"
                                                         className="file-link"
                                                     >
-                                                        <i className="fas fa-file-contract"></i> Fichier d'Accord
+                                                        <i className="fas fa-file-contract"></i> Approval Document
                                                     </a>
                                                     <span className="file-name">
                                                         {getFileName(plant.fichier_accord)}
@@ -3464,9 +3564,7 @@ const UnitModal = ({ unit, onClose }) => {
                                             <div className="certificate-header">
                                                 <i className="fas fa-certificate certificate-icon"></i>
                                                 <span className="certificate-type">{cert.Type}</span>
-                                                {cert.certificat_id && (
-                                                    <span className="cert-id-badge">ID: {cert.certificat_id}</span>
-                                                )}
+
                                             </div>
 
                                             <div className="certificate-details">
