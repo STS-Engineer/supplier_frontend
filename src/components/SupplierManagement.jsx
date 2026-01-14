@@ -42,7 +42,6 @@ const PlantTree = ({ plant, onClose }) => {
         return plantName.charAt(0).toUpperCase() + plantName.slice(1);
     };
 
-    const plantType = getPlantType(plant.plant);
     const formattedPlantName = formatPlantName(plant.plant);
 
     return (
@@ -2953,7 +2952,6 @@ const CustomerCard = ({ customer, onUnitClick, onEditGroupClick, onEditCompleteC
                         gap: '1rem',
                         marginTop: '0.75rem',
                         flexWrap: 'wrap', // Wraps to next line on smaller screens
-                        marginTop: '1rem'
                     }}>
                         {customer.responsible_group && (
                             <div style={{
@@ -3189,27 +3187,7 @@ const UnitItem = ({ unit, supplierName, onClick, onPlantClick }) => {
         onPlantClick(plant);
     };
 
-    const getPlantType = (plantName) => {
-        const plantNameLower = plantName?.toLowerCase() || '';
-        if (plantNameLower.includes('sceet') || plantNameLower.includes('same') ||
-            plantNameLower.includes('anhui') || plantNameLower.includes('india') ||
-            plantNameLower.includes('korea')) {
-            return 'Manufacturing';
-        } else if (plantNameLower.includes('monterrey')) {
-            return 'Assembly';
-        } else if (plantNameLower.includes('kunshan') || plantNameLower.includes('tianjin')) {
-            return 'Production';
-        } else if (plantNameLower.includes('poitiers')) {
-            return 'R&D';
-        } else if (plantNameLower.includes('cyclam')) {
-            return 'Development';
-        } else if (plantNameLower.includes('frankfurt')) {
-            return 'Sales';
-        } else {
-            return 'Manufacturing';
-        }
-    };
-
+    
     const formatPlantName = (plantName) => {
         if (!plantName) return '';
         return plantName.charAt(0).toUpperCase() + plantName.slice(1);
