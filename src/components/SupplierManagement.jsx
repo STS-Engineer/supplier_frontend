@@ -16,12 +16,33 @@ const PlantTree = ({ plant, onClose }) => {
         return `https://supplier-back.azurewebsites.net${filePath}`;
     };
 
+    const getPlantType = (plantName) => {
+        const plantNameLower = plantName?.toLowerCase() || '';
+        if (plantNameLower.includes('sceet') || plantNameLower.includes('same') ||
+            plantNameLower.includes('anhui') || plantNameLower.includes('india') ||
+            plantNameLower.includes('korea')) {
+            return 'Manufacturing';
+        } else if (plantNameLower.includes('monterrey')) {
+            return 'Assembly';
+        } else if (plantNameLower.includes('kunshan') || plantNameLower.includes('tianjin')) {
+            return 'Production';
+        } else if (plantNameLower.includes('poitiers')) {
+            return 'R&D';
+        } else if (plantNameLower.includes('cyclam')) {
+            return 'Development';
+        } else if (plantNameLower.includes('frankfurt')) {
+            return 'Sales';
+        } else {
+            return 'Manufacturing';
+        }
+    };
+
     const formatPlantName = (plantName) => {
         if (!plantName) return '';
         return plantName.charAt(0).toUpperCase() + plantName.slice(1);
     };
 
-   
+    const plantType = getPlantType(plant.plant);
     const formattedPlantName = formatPlantName(plant.plant);
 
     return (
@@ -2563,14 +2584,20 @@ const CompleteCustomerModal = ({
                                                 <label htmlFor={`plant_top_${unitIndex}_${plantIndex}`} className="form-label">
                                                     TOP
                                                 </label>
-                                                <input
-                                                    type="text"
+                                                <select
                                                     id={`plant_top_${unitIndex}_${plantIndex}`}
                                                     value={plant.top || ''}
                                                     onChange={(e) => onPlantChange(unitIndex, plantIndex, 'top', e.target.value)}
                                                     className="form-input"
-                                                    placeholder="Enter TOP"
-                                                />
+                                                >
+                                                    <option value="">Select TOP</option>
+                                                    <option value="Cash in advance">Cash in advance</option>
+                                                    <option value="15 days net">15 days net</option>
+                                                    <option value="30 days net">30 days net</option>
+                                                    <option value="15 end of themonth">15 end of the month or +</option>
+                                                    <option value="30 end of the month">30 end of the month or +</option>
+                                                    <option value="30 end of the month">60 end of the month or +</option>
+                                                </select>
                                             </div>
                                         </div>
 
@@ -2586,12 +2613,13 @@ const CompleteCustomerModal = ({
                                                     className="form-input"
                                                 >
                                                     <option value="">Select incoterms</option>
-                                                    <option value="Cash in advance">Cash in advance</option>
-                                                    <option value="15 days net">15 days net</option>
-                                                    <option value="30 days net">30 days net</option>
-                                                    <option value="15 end of themonth">15 end of the month or +</option>
-                                                    <option value="30 end of the month">30 end of the month or +</option>
-                                                    <option value="30 end of the month">60 end of the month or +</option>
+                                                    <option value="EXW">Ex Works</option>
+                                                    <option value="DDP">Delivered Duty Paid</option>
+                                                    <option value="DAP">Delivered At Place</option>
+                                                    <option value="CPT">Carriage Paid To</option>
+                                                    <option value="CIF">Cost, Insurance & Freight</option>
+                                                    <option value="FCA">Free Carrier</option>
+                                                    <option value="FOB">Free On Board</option>
                                                 </select>
                                             </div>
                                             <div className="form-group">
@@ -2612,7 +2640,7 @@ const CompleteCustomerModal = ({
                                         {/* File Upload for Approval Document */}
                                         <div className="form-group">
                                             <label htmlFor={`fichier_accord_${unitIndex}_${plantIndex}`} className="form-label">
-                                               Approval Document
+                                                Approval Document
                                             </label>
                                             <div className="file-upload-container">
                                                 <input
@@ -2924,7 +2952,8 @@ const CustomerCard = ({ customer, onUnitClick, onEditGroupClick, onEditCompleteC
                         gridTemplateColumns: '1fr 1fr', // Two equal columns
                         gap: '1rem',
                         marginTop: '0.75rem',
-                        flexWrap: 'wrap' // Wraps to next line on smaller screens
+                        flexWrap: 'wrap', // Wraps to next line on smaller screens
+                        marginTop: '1rem'
                     }}>
                         {customer.responsible_group && (
                             <div style={{
@@ -3158,6 +3187,27 @@ const UnitItem = ({ unit, supplierName, onClick, onPlantClick }) => {
         e.stopPropagation();
         e.preventDefault();
         onPlantClick(plant);
+    };
+
+    const getPlantType = (plantName) => {
+        const plantNameLower = plantName?.toLowerCase() || '';
+        if (plantNameLower.includes('sceet') || plantNameLower.includes('same') ||
+            plantNameLower.includes('anhui') || plantNameLower.includes('india') ||
+            plantNameLower.includes('korea')) {
+            return 'Manufacturing';
+        } else if (plantNameLower.includes('monterrey')) {
+            return 'Assembly';
+        } else if (plantNameLower.includes('kunshan') || plantNameLower.includes('tianjin')) {
+            return 'Production';
+        } else if (plantNameLower.includes('poitiers')) {
+            return 'R&D';
+        } else if (plantNameLower.includes('cyclam')) {
+            return 'Development';
+        } else if (plantNameLower.includes('frankfurt')) {
+            return 'Sales';
+        } else {
+            return 'Manufacturing';
+        }
     };
 
     const formatPlantName = (plantName) => {
