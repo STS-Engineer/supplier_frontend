@@ -718,7 +718,7 @@ const SupplierManagement = () => {
                 units: unitsWithPlants
             };
 
-            console.log('✅ CompleteCustomerData after mapping:', {
+            console.log('✅ CompletesupplierData after mapping:', {
                 units: newCompleteCustomerData.units?.length,
                 plantsInFirstUnit: newCompleteCustomerData.units?.[0]?.plants?.length
             });
@@ -979,7 +979,7 @@ const SupplierManagement = () => {
                 throw new Error(errorData.error || 'Failed to save group');
             }
 
-            toast.success(selectedGroup ? 'Customer updated successfully!' : 'Customer created successfully!');
+            toast.success(selectedGroup ? 'Supplier updated successfully!' : 'Supplier created successfully!');
             await fetchCustomers();
             closeModals();
 
@@ -1365,7 +1365,7 @@ const SupplierManagement = () => {
 
                 // Wait for all units to be updated/created
                 await Promise.all(unitPromises);
-                toast.success('Customer updated successfully!');
+                toast.success('Supplier updated successfully!');
             } else {
                 // CREATE NEW CUSTOMER
                 // 1. First create the group
@@ -1474,7 +1474,7 @@ const SupplierManagement = () => {
                 // Wait for all units to be created
                 await Promise.all(unitPromises);
 
-                toast.success("Customer created successfully!");
+                toast.success("Supplier created successfully!");
             }
 
             // Refresh the customers list
